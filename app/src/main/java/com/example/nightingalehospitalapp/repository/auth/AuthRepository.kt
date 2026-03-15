@@ -1,41 +1,105 @@
 package com.example.nightingalehospitalapp.repository.auth
 
-
-
-import com.google.firebase.auth.FirebaseAuth
 import com.example.nightingalehospitalapp.database.FirebaseConfig
 import com.example.nightingalehospitalapp.models.user.User
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.*
 
 class AuthRepository {
 
     private val auth = FirebaseAuth.getInstance()
 
-    fun registerUser(user: User, password: String, callback: (Boolean) -> Unit) {
+    /* ------------------ REGISTER USER ------------------ */
+
+    fun registerUser(
+        user: User,
+        password: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
 
         auth.createUserWithEmailAndPassword(user.email, password)
-            .addOnCompleteListener {
+            .addOnSuccessListener {
 
-                if (it.isSuccessful) {
+                val uid = auth.currentUser?.uid
+                    ?: return@addOnSuccessListener
 
-                    val uid = auth.currentUser!!.uid
+                val approvedStatus =
+                    if (user.role == "DOCTOR") false else true
 
-                    FirebaseConfig.usersRef.child(uid).setValue(user)
+                val updatedUser = user.copy(
+                    userId = uid,
+                    approved = approvedStatus
+                )
 
-                    callback(true)
+                FirebaseConfig.usersRef.child(uid)
+                    .setValue(updatedUser)
+                    .addOnSuccessListener {
 
-                } else {
-                    callback(false)
-                }
+                        onResult(true, null)
+
+                    }
+                    .addOnFailureListener {
+                        onResult(false, it.message)
+                    }
+            }
+            .addOnFailureListener {
+
+                onResult(false, it.message)
 
             }
     }
 
-    fun login(email: String, password: String, callback: (Boolean) -> Unit) {
+    /* ------------------ LOGIN USER ------------------ */
+
+    fun loginUser(
+        email: String,
+        password: String,
+        onResult: (String?, String?) -> Unit
+    ) {
 
         auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener {
-                callback(it.isSuccessful)
-            }
+            .addOnSuccessListener {
 
+                val uid = auth.currentUser?.uid ?: return@addOnSuccessListener
+
+                FirebaseConfig.usersRef.child(uid)
+                    .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                        override fun onDataChange(snapshot: DataSnapshot) {
+
+                            if (!snapshot.exists()) {
+                                auth.signOut()
+                                onResult(null, "User profile not found")
+                                return
+                            }
+
+                            val role =
+                                snapshot.child("role").getValue(String::class.java)
+
+                            val approved =
+                                snapshot.child("approved").getValue(Boolean::class.java)
+
+                            if (role == "DOCTOR" && approved == false) {
+
+                                auth.signOut()
+                                onResult(null, "Doctor not approved yet")
+                                return
+                            }
+
+                            onResult(role, null)
+                        }
+
+                        override fun onCancelled(error: DatabaseError) {
+
+                            onResult(null, error.message)
+
+                        }
+                    })
+            }
+            .addOnFailureListener {
+
+                onResult(null, it.message)
+
+            }
     }
 }
