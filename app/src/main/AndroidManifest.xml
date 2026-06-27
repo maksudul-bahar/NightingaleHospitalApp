@@ -52,6 +52,12 @@
         <activity
             android:name=".activities.ProfileActivity"
             android:exported="false" />
+        <activity
+            android:name=".admin.BedManagementActivity"
+            android:exported="false" />
+        <activity
+            android:name=".admin.OperationTheatreManagementActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

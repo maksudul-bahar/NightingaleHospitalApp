@@ -49,6 +49,7 @@ class AdminDashboardActivity : ComponentActivity() {
 fun AdminDashboardScreen() {
     val context = LocalContext.current
     var userName by remember { mutableStateOf("Admin") }
+    var showResourceSelector by remember { mutableStateOf(false) }
 
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
@@ -65,6 +66,34 @@ fun AdminDashboardScreen() {
                     // Handle error
                 }
         }
+    }
+
+    if (showResourceSelector) {
+        AlertDialog(
+            onDismissRequest = { showResourceSelector = false },
+            title = { Text("Resource Management") },
+            text = { Text("Select the resource module you want to manage:") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showResourceSelector = false
+                        context.startActivity(Intent(context, BedManagementActivity::class.java))
+                    }
+                ) {
+                    Text("Beds")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showResourceSelector = false
+                        context.startActivity(Intent(context, OperationTheatreManagementActivity::class.java))
+                    }
+                ) {
+                    Text("Operation Theatres")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -117,7 +146,9 @@ fun AdminDashboardScreen() {
             val dashboardItems = listOf(
                 DashboardItem("Manage Doctors", Icons.Filled.Face),
                 DashboardItem("Manage Departments", Icons.Filled.Build),
-                DashboardItem("Manage Beds & Theatres", Icons.Filled.Home),
+                DashboardItem("Manage Beds & Theatres", Icons.Filled.Home) {
+                    showResourceSelector = true
+                },
                 DashboardItem("View Statistics", Icons.Filled.Info),
                 DashboardItem("View Admissions", Icons.Filled.Settings)
             )
