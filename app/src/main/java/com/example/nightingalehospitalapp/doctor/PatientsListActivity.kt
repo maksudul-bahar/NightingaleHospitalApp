@@ -109,13 +109,16 @@ private data class PatientRow(
 )
 
 private fun aggregatePatients(appointments: List<Appointment>): List<PatientRow> {
-    return appointments
+    // Only CONFIRMED appointments populate "View Patients".
+    // PENDING appointments live in My Appointments until the doctor confirms them.
+    // COMPLETED appointments drop out of View Patients entirely.
+    val active = appointments.filter { it.status == AppointmentStatus.CONFIRMED }
+
+    return active
         .groupBy { it.patientId.ifBlank { it.patientName } }
         .map { (_, group) ->
-            // Pick the next upcoming appointment; if none, the most recent.
             val sorted = group.sortedWith(compareBy({ it.date }, { it.time }))
-            val next = sorted.firstOrNull { it.status != AppointmentStatus.COMPLETED }
-                ?: sorted.last()
+            val next = sorted.first() // earliest upcoming confirmed appointment
             PatientRow(
                 patientId = next.patientId,
                 patientName = next.patientName.ifBlank { next.patientId },

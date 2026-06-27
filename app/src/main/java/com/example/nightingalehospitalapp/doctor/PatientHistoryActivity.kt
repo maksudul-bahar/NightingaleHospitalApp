@@ -3,7 +3,9 @@ package com.example.nightingalehospitalapp.doctor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,9 +20,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,6 +37,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,22 +46,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
-import com.example.nightingalehospitalapp.viewmodel.AppointmentViewModel
 import com.example.nightingalehospitalapp.viewmodel.HistoryItem
-import com.example.nightingalehospitalapp.viewmodel.PatientHistory
+import com.example.nightingalehospitalapp.viewmodel.PatientHistoryViewModel
 
 class PatientHistoryActivity : ComponentActivity() {
+
+    private val viewModel: PatientHistoryViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-val patientId = intent.getStringExtra(EXTRA_PATIENT_ID) ?: "demo-patient-1"
-        // For now, history is sourced from the ViewModel's demo record.
-        // Once other repositories land, this will query real collections.
-        val viewModel = AppointmentViewModel()
-        val history = viewModel.demoPatientHistory(patientId)
-        val patientName = intent.getStringExtra(EXTRA_PATIENT_NAME) ?: history.patientName
+        val patientId = intent.getStringExtra(EXTRA_PATIENT_ID).orEmpty()
+        val patientName = intent.getStringExtra(EXTRA_PATIENT_NAME) ?: "Patient"
+
+        viewModel.observe(patientId)
 
         setContent {
             NightingaleHospitalAppTheme {
@@ -74,11 +81,14 @@ val patientId = intent.getStringExtra(EXTRA_PATIENT_ID) ?: "demo-patient-1"
                         )
                     }
                 ) { padding ->
+                    val state by viewModel.uiState.collectAsState()
                     HistoryScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding),
-                        history = history
+                        patientName = patientName,
+                        patientId = patientId,
+                        state = state
                     )
                 }
             }
@@ -94,33 +104,90 @@ val patientId = intent.getStringExtra(EXTRA_PATIENT_ID) ?: "demo-patient-1"
 @Composable
 private fun HistoryScreen(
     modifier: Modifier = Modifier,
-    history: PatientHistory
+    patientName: String,
+    patientId: String,
+    state: PatientHistoryViewModel.UiState
 ) {
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item { PatientHeader(history) }
+    when (state) {
+        PatientHistoryViewModel.UiState.Idle,
+        PatientHistoryViewModel.UiState.Loading -> {
+            Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+        PatientHistoryViewModel.UiState.Empty -> {
+            Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "No medical history recorded yet",
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Prescriptions, tests and surgeries will appear here",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        is PatientHistoryViewModel.UiState.Error -> {
+            Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                Text(
+                    text = "Failed to load history: ${state.message}",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+        is PatientHistoryViewModel.UiState.Loaded -> {
+            LazyColumn(
+                modifier = modifier,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                item { PatientHeader(patientName, patientId) }
+                item { SectionTitle("Prescriptions") }
+                val prescriptions = state.history.items
+                    .filterIsInstance<HistoryItem.PrescriptionRow>()
+                if (prescriptions.isEmpty()) {
+                    item { EmptySection("No prescriptions yet") }
+                } else {
+                    items(prescriptions, key = { "rx-${it.prescriptionId}" }) {
+                        PrescriptionRow(it)
+                    }
+                }
 
-        item { SectionTitle("Appointments") }
-        items(history.appointments, key = { "appt-${it.title}-${it.date}" }) { HistoryRow(it) }
+                item { SectionTitle("Diagnostic Tests") }
+                val bookings = state.history.items
+                    .filterIsInstance<HistoryItem.TestBookingRow>()
+                if (bookings.isEmpty()) {
+                    item { EmptySection("No diagnostic tests booked") }
+                } else {
+                    items(bookings, key = { "test-${it.bookingId}" }) {
+                        TestBookingRow(it)
+                    }
+                }
 
-        item { SectionTitle("Prescriptions") }
-        items(history.prescriptions, key = { "rx-${it.title}-${it.date}" }) { HistoryRow(it) }
+                item { SectionTitle("Surgeries") }
+                val surgeries = state.history.items
+                    .filterIsInstance<HistoryItem.SurgeryRow>()
+                if (surgeries.isEmpty()) {
+                    item { EmptySection("No surgeries recorded") }
+                } else {
+                    items(surgeries, key = { "surg-${it.surgeryId}" }) {
+                        SurgeryRow(it)
+                    }
+                }
 
-        item { SectionTitle("Diagnostic Tests") }
-        items(history.tests, key = { "test-${it.title}-${it.date}" }) { HistoryRow(it) }
-
-        item { SectionTitle("Surgeries") }
-        items(history.surgeries, key = { "surg-${it.title}-${it.date}" }) { HistoryRow(it) }
-
-        item { Spacer(Modifier.height(8.dp)) }
+                item { Spacer(Modifier.height(8.dp)) }
+            }
+        }
     }
 }
 
 @Composable
-private fun PatientHeader(history: PatientHistory) {
+private fun PatientHeader(name: String, id: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -150,25 +217,14 @@ private fun PatientHeader(history: PatientHistory) {
             Spacer(Modifier.size(12.dp))
             Column {
                 Text(
-                    text = history.patientName,
+                    text = name,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    text = "ID: ${history.patientId}",
+                    text = "ID: $id",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(Modifier.size(4.dp))
-                Text(
-                    text = "${history.age} yrs  |  ${history.gender}  |  ${history.bloodGroup}",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = "Phone: ${history.phone}",
-                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
@@ -188,7 +244,16 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun HistoryRow(item: HistoryItem) {
+private fun EmptySection(text: String) {
+    Text(
+        text = text,
+        fontSize = 13.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+private fun PrescriptionRow(row: HistoryItem.PrescriptionRow) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -196,29 +261,124 @@ private fun HistoryRow(item: HistoryItem) {
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.Medication,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.size(8.dp))
                 Text(
-                    text = item.title,
+                    text = "Prescription by ${row.doctorName}",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 15.sp,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = item.date,
+                    text = row.date,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(Modifier.size(2.dp))
+            if (row.diagnosis.isNotBlank()) {
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    text = row.diagnosis,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            if (row.medicines.isNotEmpty()) {
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    text = "Medicines",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                row.medicines.forEach { line ->
+                    Text(
+                        text = "• $line",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TestBookingRow(row: HistoryItem.TestBookingRow) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = row.testName,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = row.date,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(Modifier.size(4.dp))
             Text(
-                text = item.provider,
+                text = "Status: ${row.status}",
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun SurgeryRow(row: HistoryItem.SurgeryRow) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.MedicalServices,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = row.surgeryType,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = row.date,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Spacer(Modifier.size(4.dp))
             Text(
-                text = item.detail,
+                text = "Status: ${row.status}",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
