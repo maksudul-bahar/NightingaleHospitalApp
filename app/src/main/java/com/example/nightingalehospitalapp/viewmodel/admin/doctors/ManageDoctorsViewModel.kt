@@ -51,7 +51,8 @@ class ManageDoctorsViewModel(
             doctorId = user.userId,
             userId = user.userId,
             name = user.name,
-            email = user.email
+            email = user.email,
+            displayId = user.displayId
         )
         FirebaseConfig.doctorsRef.document(user.userId).set(doctor).addOnSuccessListener {
             // Update user to approved

@@ -38,6 +38,7 @@ fun ProfileScreen(onBackClick: () -> Unit) {
     var name by remember { mutableStateOf("Loading...") }
     var email by remember { mutableStateOf("Loading...") }
     var role by remember { mutableStateOf("Loading...") }
+    var displayId by remember { mutableStateOf("") }
 
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
@@ -50,6 +51,11 @@ fun ProfileScreen(onBackClick: () -> Unit) {
                     if (document.exists()) {
                         name = document.getString("name") ?: "Unknown Name"
                         role = document.getString("role") ?: "Unknown Role"
+                        
+                        if (role == "PATIENT" || role == "DOCTOR") {
+                            val id = document.getString("displayId")
+                            displayId = if (!id.isNullOrEmpty()) id else currentUser.uid
+                        }
                     }
                 }
                 .addOnFailureListener { error ->
@@ -89,6 +95,10 @@ fun ProfileScreen(onBackClick: () -> Unit) {
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text("Name: $name", style = MaterialTheme.typography.titleLarge)
+                    if (displayId.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("ID: $displayId", style = MaterialTheme.typography.bodyLarge)
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Email: $email", style = MaterialTheme.typography.bodyLarge)
                     Spacer(modifier = Modifier.height(8.dp))

@@ -55,20 +55,24 @@ fun CreateAdmissionScreen(
     val context = LocalContext.current
 
     var selectedPatientId by remember { mutableStateOf("") }
-    var selectedPatientName by remember { mutableStateOf("Select Patient") }
+    var patientSearchQuery by remember { mutableStateOf("") }
     var patientExpanded by remember { mutableStateOf(false) }
+    val filteredPatients = patients.filter { it.name.contains(patientSearchQuery, ignoreCase = true) || it.userId.contains(patientSearchQuery, ignoreCase = true) || it.displayId.contains(patientSearchQuery, ignoreCase = true) }
 
     var selectedDoctorId by remember { mutableStateOf("") }
-    var selectedDoctorName by remember { mutableStateOf("Select Doctor") }
+    var doctorSearchQuery by remember { mutableStateOf("") }
     var doctorExpanded by remember { mutableStateOf(false) }
+    val filteredDoctors = doctors.filter { it.name.contains(doctorSearchQuery, ignoreCase = true) || it.doctorId.contains(doctorSearchQuery, ignoreCase = true) || it.displayId.contains(doctorSearchQuery, ignoreCase = true) }
 
     var selectedDepartmentId by remember { mutableStateOf("") }
-    var selectedDepartmentName by remember { mutableStateOf("Select Department") }
+    var departmentSearchQuery by remember { mutableStateOf("") }
     var departmentExpanded by remember { mutableStateOf(false) }
+    val filteredDepartments = departments.filter { it.name.contains(departmentSearchQuery, ignoreCase = true) || it.departmentId.contains(departmentSearchQuery, ignoreCase = true) }
 
     var selectedBedId by remember { mutableStateOf("") }
-    var selectedBedRoom by remember { mutableStateOf("Select Bed") }
+    var bedSearchQuery by remember { mutableStateOf("") }
     var bedExpanded by remember { mutableStateOf(false) }
+    val filteredBeds = beds.filter { it.roomNumber.contains(bedSearchQuery, ignoreCase = true) || it.bedId.contains(bedSearchQuery, ignoreCase = true) }
 
     var reason by remember { mutableStateOf("") }
 
@@ -108,10 +112,15 @@ fun CreateAdmissionScreen(
                     onExpandedChange = { patientExpanded = !patientExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedPatientName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = patientSearchQuery,
+                        onValueChange = {
+                            patientSearchQuery = it
+                            patientExpanded = true
+                            selectedPatientId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Patient") },
+                        placeholder = { Text("Select or search patient") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = patientExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -119,12 +128,12 @@ fun CreateAdmissionScreen(
                         expanded = patientExpanded,
                         onDismissRequest = { patientExpanded = false }
                     ) {
-                        patients.forEach { patient ->
+                        filteredPatients.forEach { patient ->
                             DropdownMenuItem(
-                                text = { Text(patient.name) },
+                                text = { Text("${patient.name} (${patient.displayId.ifEmpty { patient.userId }})") },
                                 onClick = {
                                     selectedPatientId = patient.userId
-                                    selectedPatientName = patient.name
+                                    patientSearchQuery = "${patient.name} (${patient.displayId.ifEmpty { patient.userId }})"
                                     patientExpanded = false
                                 }
                             )
@@ -138,10 +147,15 @@ fun CreateAdmissionScreen(
                     onExpandedChange = { doctorExpanded = !doctorExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedDoctorName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = doctorSearchQuery,
+                        onValueChange = {
+                            doctorSearchQuery = it
+                            doctorExpanded = true
+                            selectedDoctorId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Doctor") },
+                        placeholder = { Text("Select or search doctor") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = doctorExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -149,12 +163,12 @@ fun CreateAdmissionScreen(
                         expanded = doctorExpanded,
                         onDismissRequest = { doctorExpanded = false }
                     ) {
-                        doctors.forEach { doctor ->
+                        filteredDoctors.forEach { doctor ->
                             DropdownMenuItem(
-                                text = { Text(doctor.name) },
+                                text = { Text("${doctor.name} (${doctor.displayId.ifEmpty { doctor.doctorId }})") },
                                 onClick = {
                                     selectedDoctorId = doctor.doctorId
-                                    selectedDoctorName = doctor.name
+                                    doctorSearchQuery = "${doctor.name} (${doctor.displayId.ifEmpty { doctor.doctorId }})"
                                     doctorExpanded = false
                                 }
                             )
@@ -168,10 +182,15 @@ fun CreateAdmissionScreen(
                     onExpandedChange = { departmentExpanded = !departmentExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedDepartmentName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = departmentSearchQuery,
+                        onValueChange = {
+                            departmentSearchQuery = it
+                            departmentExpanded = true
+                            selectedDepartmentId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Department") },
+                        placeholder = { Text("Select or search department") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = departmentExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -179,12 +198,12 @@ fun CreateAdmissionScreen(
                         expanded = departmentExpanded,
                         onDismissRequest = { departmentExpanded = false }
                     ) {
-                        departments.forEach { department ->
+                        filteredDepartments.forEach { department ->
                             DropdownMenuItem(
                                 text = { Text(department.name) },
                                 onClick = {
                                     selectedDepartmentId = department.departmentId
-                                    selectedDepartmentName = department.name
+                                    departmentSearchQuery = department.name
                                     departmentExpanded = false
                                 }
                             )
@@ -198,10 +217,15 @@ fun CreateAdmissionScreen(
                     onExpandedChange = { bedExpanded = !bedExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedBedRoom,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = bedSearchQuery,
+                        onValueChange = {
+                            bedSearchQuery = it
+                            bedExpanded = true
+                            selectedBedId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Bed") },
+                        placeholder = { Text("Select or search bed") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bedExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -209,18 +233,18 @@ fun CreateAdmissionScreen(
                         expanded = bedExpanded,
                         onDismissRequest = { bedExpanded = false }
                     ) {
-                        if (beds.isEmpty()) {
+                        if (filteredBeds.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No beds available") },
+                                text = { Text("No beds found") },
                                 onClick = { bedExpanded = false }
                             )
                         } else {
-                            beds.forEach { bed ->
+                            filteredBeds.forEach { bed ->
                                 DropdownMenuItem(
                                     text = { Text("Room ${bed.roomNumber} - ${bed.ward}") },
                                     onClick = {
                                         selectedBedId = bed.bedId
-                                        selectedBedRoom = "Room ${bed.roomNumber}"
+                                        bedSearchQuery = "Room ${bed.roomNumber} - ${bed.ward}"
                                         bedExpanded = false
                                     }
                                 )

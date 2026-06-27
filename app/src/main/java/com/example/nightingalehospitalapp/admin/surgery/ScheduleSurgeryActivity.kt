@@ -60,16 +60,19 @@ fun ScheduleSurgeryScreen(
     val context = LocalContext.current
 
     var selectedPatientId by remember { mutableStateOf("") }
-    var selectedPatientName by remember { mutableStateOf("Select Patient") }
+    var patientSearchQuery by remember { mutableStateOf("") }
     var patientExpanded by remember { mutableStateOf(false) }
+    val filteredPatients = patients.filter { it.name.contains(patientSearchQuery, ignoreCase = true) || it.userId.contains(patientSearchQuery, ignoreCase = true) || it.displayId.contains(patientSearchQuery, ignoreCase = true) }
 
     var selectedDoctorId by remember { mutableStateOf("") }
-    var selectedDoctorName by remember { mutableStateOf("Select Doctor") }
+    var doctorSearchQuery by remember { mutableStateOf("") }
     var doctorExpanded by remember { mutableStateOf(false) }
+    val filteredDoctors = doctors.filter { it.name.contains(doctorSearchQuery, ignoreCase = true) || it.doctorId.contains(doctorSearchQuery, ignoreCase = true) || it.displayId.contains(doctorSearchQuery, ignoreCase = true) }
 
     var selectedOtId by remember { mutableStateOf("") }
-    var selectedOtRoom by remember { mutableStateOf("Select Operation Theatre") }
+    var otSearchQuery by remember { mutableStateOf("") }
     var otExpanded by remember { mutableStateOf(false) }
+    val filteredOts = operationTheatres.filter { it.roomNumber.contains(otSearchQuery, ignoreCase = true) || it.otId.contains(otSearchQuery, ignoreCase = true) }
 
     var surgeryType by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
@@ -112,10 +115,15 @@ fun ScheduleSurgeryScreen(
                     onExpandedChange = { patientExpanded = !patientExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedPatientName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = patientSearchQuery,
+                        onValueChange = {
+                            patientSearchQuery = it
+                            patientExpanded = true
+                            selectedPatientId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Patient") },
+                        placeholder = { Text("Select or search patient") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = patientExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -123,12 +131,12 @@ fun ScheduleSurgeryScreen(
                         expanded = patientExpanded,
                         onDismissRequest = { patientExpanded = false }
                     ) {
-                        patients.forEach { patient ->
+                        filteredPatients.forEach { patient ->
                             DropdownMenuItem(
-                                text = { Text(patient.name) },
+                                text = { Text("${patient.name} (${patient.displayId.ifEmpty { patient.userId }})") },
                                 onClick = {
                                     selectedPatientId = patient.userId
-                                    selectedPatientName = patient.name
+                                    patientSearchQuery = "${patient.name} (${patient.displayId.ifEmpty { patient.userId }})"
                                     patientExpanded = false
                                 }
                             )
@@ -142,10 +150,15 @@ fun ScheduleSurgeryScreen(
                     onExpandedChange = { doctorExpanded = !doctorExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedDoctorName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = doctorSearchQuery,
+                        onValueChange = {
+                            doctorSearchQuery = it
+                            doctorExpanded = true
+                            selectedDoctorId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Doctor") },
+                        placeholder = { Text("Select or search doctor") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = doctorExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -153,12 +166,12 @@ fun ScheduleSurgeryScreen(
                         expanded = doctorExpanded,
                         onDismissRequest = { doctorExpanded = false }
                     ) {
-                        doctors.forEach { doctor ->
+                        filteredDoctors.forEach { doctor ->
                             DropdownMenuItem(
-                                text = { Text(doctor.name) },
+                                text = { Text("${doctor.name} (${doctor.displayId.ifEmpty { doctor.doctorId }})") },
                                 onClick = {
                                     selectedDoctorId = doctor.doctorId
-                                    selectedDoctorName = doctor.name
+                                    doctorSearchQuery = "${doctor.name} (${doctor.displayId.ifEmpty { doctor.doctorId }})"
                                     doctorExpanded = false
                                 }
                             )
@@ -172,10 +185,15 @@ fun ScheduleSurgeryScreen(
                     onExpandedChange = { otExpanded = !otExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedOtRoom,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = otSearchQuery,
+                        onValueChange = {
+                            otSearchQuery = it
+                            otExpanded = true
+                            selectedOtId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Operation Theatre") },
+                        placeholder = { Text("Select or search OT") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = otExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -183,18 +201,18 @@ fun ScheduleSurgeryScreen(
                         expanded = otExpanded,
                         onDismissRequest = { otExpanded = false }
                     ) {
-                        if (operationTheatres.isEmpty()) {
+                        if (filteredOts.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No OTs available") },
+                                text = { Text("No OTs found") },
                                 onClick = { otExpanded = false }
                             )
                         } else {
-                            operationTheatres.forEach { ot ->
+                            filteredOts.forEach { ot ->
                                 DropdownMenuItem(
                                     text = { Text("Room ${ot.roomNumber} (Floor ${ot.floor})") },
                                     onClick = {
                                         selectedOtId = ot.otId
-                                        selectedOtRoom = "Room ${ot.roomNumber}"
+                                        otSearchQuery = "Room ${ot.roomNumber} (Floor ${ot.floor})"
                                         otExpanded = false
                                     }
                                 )

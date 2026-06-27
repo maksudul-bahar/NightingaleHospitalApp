@@ -36,7 +36,7 @@ class DoctorRepository {
             for (user in doctorUsers) {
                 // Find matching profile or create a default one
                 val profile = doctorProfiles.find { it.userId == user.userId }
-                    ?: Doctor(doctorId = user.userId, userId = user.userId, specialization = "General")
+                    ?: Doctor(doctorId = user.userId, userId = user.userId, specialization = "General", displayId = user.displayId)
 
                 result.add(DoctorWithUser(profile, user))
             }

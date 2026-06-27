@@ -69,7 +69,9 @@ class ManageAdmissionsViewModel : ViewModel() {
                                 // Fetch Bed Room
                                 FirebaseConfig.bedsRef.document(admission.bedId).get()
                                     .addOnSuccessListener { bedDoc ->
-                                        val bedRoom = bedDoc.getString("roomNumber") ?: "Unknown Bed"
+                                        val roomNumber = bedDoc.getString("roomNumber") ?: "Unknown Bed"
+                                        val ward = bedDoc.getString("ward") ?: ""
+                                        val bedRoom = if (ward.isNotEmpty()) "Room $roomNumber - $ward" else "Room $roomNumber"
                                         
                                         resultList.add(
                                             AdmittedPatientItem(

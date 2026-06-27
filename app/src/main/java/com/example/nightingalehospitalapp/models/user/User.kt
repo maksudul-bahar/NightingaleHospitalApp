@@ -5,5 +5,6 @@ data class User(
     val name: String = "",
     val email: String = "",
     val role: String = "PATIENT",
-    val approved: Boolean = false
+    val approved: Boolean = false,
+    val displayId: String = ""
 )

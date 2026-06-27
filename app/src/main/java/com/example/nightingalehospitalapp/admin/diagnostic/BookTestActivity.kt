@@ -54,16 +54,19 @@ fun BookTestScreen(
     val context = LocalContext.current
 
     var selectedPatientId by remember { mutableStateOf("") }
-    var selectedPatientName by remember { mutableStateOf("Select Patient") }
+    var patientSearchQuery by remember { mutableStateOf("") }
     var patientExpanded by remember { mutableStateOf(false) }
+    val filteredPatients = patients.filter { it.name.contains(patientSearchQuery, ignoreCase = true) || it.userId.contains(patientSearchQuery, ignoreCase = true) || it.displayId.contains(patientSearchQuery, ignoreCase = true) }
 
     var selectedDoctorId by remember { mutableStateOf("") }
-    var selectedDoctorName by remember { mutableStateOf("Select Doctor") }
+    var doctorSearchQuery by remember { mutableStateOf("") }
     var doctorExpanded by remember { mutableStateOf(false) }
+    val filteredDoctors = doctors.filter { it.name.contains(doctorSearchQuery, ignoreCase = true) || it.doctorId.contains(doctorSearchQuery, ignoreCase = true) || it.displayId.contains(doctorSearchQuery, ignoreCase = true) }
 
     var selectedTestId by remember { mutableStateOf("") }
-    var selectedTestName by remember { mutableStateOf("Select Diagnostic Test") }
+    var testSearchQuery by remember { mutableStateOf("") }
     var testExpanded by remember { mutableStateOf(false) }
+    val filteredTests = diagnosticTests.filter { it.testName.contains(testSearchQuery, ignoreCase = true) || it.testId.contains(testSearchQuery, ignoreCase = true) }
 
     var date by remember { mutableStateOf("") }
 
@@ -103,10 +106,15 @@ fun BookTestScreen(
                     onExpandedChange = { patientExpanded = !patientExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedPatientName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = patientSearchQuery,
+                        onValueChange = {
+                            patientSearchQuery = it
+                            patientExpanded = true
+                            selectedPatientId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Patient") },
+                        placeholder = { Text("Select or search patient") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = patientExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -114,12 +122,12 @@ fun BookTestScreen(
                         expanded = patientExpanded,
                         onDismissRequest = { patientExpanded = false }
                     ) {
-                        patients.forEach { patient ->
+                        filteredPatients.forEach { patient ->
                             DropdownMenuItem(
-                                text = { Text(patient.name) },
+                                text = { Text("${patient.name} (${patient.displayId.ifEmpty { patient.userId }})") },
                                 onClick = {
                                     selectedPatientId = patient.userId
-                                    selectedPatientName = patient.name
+                                    patientSearchQuery = "${patient.name} (${patient.displayId.ifEmpty { patient.userId }})"
                                     patientExpanded = false
                                 }
                             )
@@ -133,10 +141,15 @@ fun BookTestScreen(
                     onExpandedChange = { doctorExpanded = !doctorExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedDoctorName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = doctorSearchQuery,
+                        onValueChange = {
+                            doctorSearchQuery = it
+                            doctorExpanded = true
+                            selectedDoctorId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Doctor") },
+                        placeholder = { Text("Select or search doctor") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = doctorExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -144,12 +157,12 @@ fun BookTestScreen(
                         expanded = doctorExpanded,
                         onDismissRequest = { doctorExpanded = false }
                     ) {
-                        doctors.forEach { doctor ->
+                        filteredDoctors.forEach { doctor ->
                             DropdownMenuItem(
-                                text = { Text(doctor.name) },
+                                text = { Text("${doctor.name} (${doctor.displayId.ifEmpty { doctor.doctorId }})") },
                                 onClick = {
                                     selectedDoctorId = doctor.doctorId
-                                    selectedDoctorName = doctor.name
+                                    doctorSearchQuery = "${doctor.name} (${doctor.displayId.ifEmpty { doctor.doctorId }})"
                                     doctorExpanded = false
                                 }
                             )
@@ -163,10 +176,15 @@ fun BookTestScreen(
                     onExpandedChange = { testExpanded = !testExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedTestName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = testSearchQuery,
+                        onValueChange = {
+                            testSearchQuery = it
+                            testExpanded = true
+                            selectedTestId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Diagnostic Test") },
+                        placeholder = { Text("Select or search test") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = testExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -174,18 +192,18 @@ fun BookTestScreen(
                         expanded = testExpanded,
                         onDismissRequest = { testExpanded = false }
                     ) {
-                        if (diagnosticTests.isEmpty()) {
+                        if (filteredTests.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No tests available") },
+                                text = { Text("No tests found") },
                                 onClick = { testExpanded = false }
                             )
                         } else {
-                            diagnosticTests.forEach { test ->
+                            filteredTests.forEach { test ->
                                 DropdownMenuItem(
                                     text = { Text("${test.testName} ($${test.price})") },
                                     onClick = {
                                         selectedTestId = test.testId
-                                        selectedTestName = test.testName
+                                        testSearchQuery = test.testName
                                         testExpanded = false
                                     }
                                 )

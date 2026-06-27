@@ -10,5 +10,6 @@ data class Doctor(
     val qualification: String = "",
     val experienceYears: Int = 0,
     val departmentId: String = "",
-    val isApproved: Boolean = false
+    val isApproved: Boolean = false,
+    val displayId: String = ""
 )

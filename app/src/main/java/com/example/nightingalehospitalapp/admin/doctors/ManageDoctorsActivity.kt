@@ -144,9 +144,9 @@ fun DoctorDialog(
     var experience by remember { mutableStateOf(initialDoctor?.experienceYears?.toString() ?: "0") }
     
     var selectedDepartmentId by remember { mutableStateOf(initialDoctor?.departmentId ?: "") }
+    var departmentSearchQuery by remember { mutableStateOf(departments.find { it.departmentId == initialDoctor?.departmentId }?.name ?: "") }
     var departmentExpanded by remember { mutableStateOf(false) }
-    
-    val selectedDepartmentName = departments.find { it.departmentId == selectedDepartmentId }?.name ?: "Select Department"
+    val filteredDepartments = departments.filter { it.name.contains(departmentSearchQuery, ignoreCase = true) || it.departmentId.contains(departmentSearchQuery, ignoreCase = true) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -188,10 +188,15 @@ fun DoctorDialog(
                     onExpandedChange = { departmentExpanded = !departmentExpanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedDepartmentName,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = departmentSearchQuery,
+                        onValueChange = {
+                            departmentSearchQuery = it
+                            departmentExpanded = true
+                            selectedDepartmentId = ""
+                        },
+                        readOnly = false,
                         label = { Text("Department") },
+                        placeholder = { Text("Select or search department") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = departmentExpanded) },
                         modifier = Modifier.menuAnchor()
                     )
@@ -199,11 +204,12 @@ fun DoctorDialog(
                         expanded = departmentExpanded,
                         onDismissRequest = { departmentExpanded = false }
                     ) {
-                        departments.forEach { dept ->
+                        filteredDepartments.forEach { dept ->
                             DropdownMenuItem(
                                 text = { Text(dept.name) },
                                 onClick = {
                                     selectedDepartmentId = dept.departmentId
+                                    departmentSearchQuery = dept.name
                                     departmentExpanded = false
                                 }
                             )

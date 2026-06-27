@@ -19,19 +19,32 @@ class AuthRepository {
             .addOnSuccessListener {
                 val uid = auth.currentUser?.uid ?: return@addOnSuccessListener
                 val approvedStatus = if (user.role == "DOCTOR") false else true
-                val updatedUser = user.copy(
-                    userId = uid,
-                    approved = approvedStatus
-                )
-
-                FirebaseConfig.usersRef.document(uid)
-                    .set(updatedUser)
-                    .addOnSuccessListener {
-                        onResult(true, null)
-                    }
-                    .addOnFailureListener {
-                        onResult(false, it.message)
-                    }
+                
+                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val counterRef = db.collection("metadata").document("counters")
+                
+                db.runTransaction { transaction ->
+                    val snapshot = transaction.get(counterRef)
+                    val counterField = if (user.role == "PATIENT") "patientCounter" else "doctorCounter"
+                    val currentCount = snapshot.getLong(counterField) ?: 1000L
+                    val nextCount = currentCount + 1
+                    
+                    transaction.set(counterRef, mapOf(counterField to nextCount), com.google.firebase.firestore.SetOptions.merge())
+                    
+                    val displayId = nextCount.toString()
+                    val updatedUser = user.copy(
+                        userId = uid,
+                        approved = approvedStatus,
+                        displayId = displayId
+                    )
+                    
+                    transaction.set(FirebaseConfig.usersRef.document(uid), updatedUser)
+                    null // return null for transaction result
+                }.addOnSuccessListener {
+                    onResult(true, null)
+                }.addOnFailureListener {
+                    onResult(false, it.message)
+                }
             }
             .addOnFailureListener {
                 onResult(false, it.message)
