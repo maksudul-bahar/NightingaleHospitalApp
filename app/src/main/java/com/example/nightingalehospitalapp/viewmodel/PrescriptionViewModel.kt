@@ -18,14 +18,17 @@ class PrescriptionViewModel : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
-        data class Loaded(val prescriptions: List<Prescription>) : UiState()
+        data class Loaded(
+            val prescriptions: List<Prescription>,
+            val doctorNames: Map<String, String> = emptyMap()
+        ) : UiState()
         data class Error(val message: String) : UiState()
     }
 
     private val _state = MutableStateFlow<UiState>(UiState.Idle)
     val state: StateFlow<UiState> = _state.asStateFlow()
 
-    // Cache of doctorId -> doctor display name
+    // Keep a separate backing map so we can merge on each update
     private val _doctorNames = MutableStateFlow<Map<String, String>>(emptyMap())
     val doctorNames: StateFlow<Map<String, String>> = _doctorNames.asStateFlow()
 
@@ -44,7 +47,6 @@ class PrescriptionViewModel : ViewModel() {
             repository.observePrescriptionsForPatient(patientId)
                 .catch { e -> _state.value = UiState.Error(e.message ?: "Failed to load prescriptions") }
                 .collectLatest { prescriptions ->
-                    _state.value = UiState.Loaded(prescriptions)
                     // Resolve doctor names for every unique doctorId
                     val uniqueIds = prescriptions.map { it.doctorId }.distinct()
                     val currentMap = _doctorNames.value.toMutableMap()
@@ -54,6 +56,12 @@ class PrescriptionViewModel : ViewModel() {
                         }
                     }
                     _doctorNames.value = currentMap
+
+                    // Emit a single combined state so UI always has the latest names
+                    _state.value = UiState.Loaded(
+                        prescriptions = prescriptions,
+                        doctorNames = currentMap
+                    )
                 }
         }
     }
