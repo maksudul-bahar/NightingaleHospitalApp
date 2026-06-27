@@ -154,18 +154,20 @@ private fun TestResultCard(result: com.example.nightingalehospitalapp.models.dia
                 )
             }
             Spacer(Modifier.size(6.dp))
-            Text(
-                text = result.resultDescription.ifBlank { "No description provided." },
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (result.reportUrl.isNotBlank()) {
-                Spacer(Modifier.size(4.dp))
+            if (result.results.isEmpty()) {
                 Text(
-                    text = "Report: ${result.reportUrl}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    text = "No results provided.",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+            } else {
+                result.results.forEach { item ->
+                    Text(
+                        text = "${item.problem}: ${item.result}",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }
