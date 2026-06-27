@@ -127,7 +127,7 @@ fun AdminDashboardScreen() {
                 DashboardItem("Manage Surgeries", Icons.Filled.Settings) {
                     context.startActivity(Intent(context, com.example.nightingalehospitalapp.admin.surgery.ManageSurgeriesActivity::class.java))
                 },
-                DashboardItem("Diagnostic Tests", Icons.Filled.Info) {
+                DashboardItem("Manage Tests & Results", Icons.Filled.Info) {
                     context.startActivity(Intent(context, com.example.nightingalehospitalapp.admin.diagnostic.ManageTestBookingsActivity::class.java))
                 },
                 DashboardItem("Medicine Inventory", Icons.Filled.Info) {

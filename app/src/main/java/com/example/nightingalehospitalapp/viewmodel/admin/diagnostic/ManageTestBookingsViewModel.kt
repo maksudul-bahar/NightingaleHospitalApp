@@ -123,6 +123,7 @@ class ManageTestBookingsViewModel : ViewModel() {
         val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
         val testResult = TestResult(
+            bookingId = bookingId,
             patientId = patientId,
             date = dateStr,
             results = results
