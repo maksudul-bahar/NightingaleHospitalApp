@@ -2,13 +2,18 @@ package com.example.nightingalehospitalapp.repository.prescription
 
 import com.example.nightingalehospitalapp.database.FirebaseConfig
 import com.example.nightingalehospitalapp.models.prescription.Prescription
+import com.example.nightingalehospitalapp.models.prescription.PrescriptionMedicine
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-class PrescriptionRepository {
+class PrescriptionRepository(
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+) {
 
     /* ------------------ WRITE ------------------ */
 
@@ -41,6 +46,27 @@ class PrescriptionRepository {
                 val list = snapshot?.documents?.mapNotNull {
                     it.toObject(Prescription::class.java)
                 }?.sortedByDescending { it.date } ?: emptyList()
+                trySend(list)
+            }
+        awaitClose { registration.remove() }
+    }
+
+    /* ------------------ READ (real-time) — Medicines for prescription ------------------ */
+
+    /**
+     * Real-time stream of medicines tied to a specific prescription.
+     */
+    fun observeMedicinesForPrescription(prescriptionId: String): Flow<List<PrescriptionMedicine>> = callbackFlow {
+        val registration: ListenerRegistration = db.collection("prescription_medicines")
+            .whereEqualTo("prescriptionId", prescriptionId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val list = snapshot?.documents
+                    ?.mapNotNull { it.toObject(PrescriptionMedicine::class.java) }
+                    ?: emptyList()
                 trySend(list)
             }
         awaitClose { registration.remove() }
