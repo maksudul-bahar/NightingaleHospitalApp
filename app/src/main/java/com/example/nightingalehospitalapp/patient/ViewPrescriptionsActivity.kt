@@ -63,7 +63,6 @@ fun ViewPrescriptionsScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.state.collectAsState()
-    val doctorNames by viewModel.doctorNames.collectAsState()
 
     Scaffold(
         topBar = {
@@ -170,7 +169,7 @@ fun ViewPrescriptionsScreen(
                         ) { prescription ->
                             PrescriptionCard(
                                 prescription = prescription,
-                                doctorName = doctorNames[prescription.doctorId] ?: "Loading…"
+                                doctorName = state.doctorNames[prescription.doctorId] ?: "Loading…"
                             )
                         }
                     }

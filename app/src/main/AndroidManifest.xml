@@ -38,6 +38,9 @@
             android:name=".admin.resources.ManageResourcesActivity"
             android:exported="false" />
         <activity
+            android:name=".admin.resources.MedicineInventoryActivity"
+            android:exported="false" />
+        <activity
             android:name=".admin.doctors.ManageDoctorsActivity"
             android:exported="false" />
         <activity
