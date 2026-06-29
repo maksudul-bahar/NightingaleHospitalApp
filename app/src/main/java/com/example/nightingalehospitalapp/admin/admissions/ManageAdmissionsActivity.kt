@@ -24,6 +24,11 @@ import com.example.nightingalehospitalapp.viewmodel.admin.admissions.ManageAdmis
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import androidx.compose.material.icons.filled.Info
 
 class ManageAdmissionsActivity : ComponentActivity() {
 
@@ -98,12 +103,17 @@ fun ManageAdmissionsScreen(
                 .padding(16.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(4) { NightingaleListShimmer() }
+                }
             } else if (admittedPatients.isEmpty()) {
-                Text(
-                    text = "No admitted patients.",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge
+                NightingaleEmptyState(
+                    title = "No Admitted Patients",
+                    message = "There are currently no patients admitted to the hospital.",
+                    icon = Icons.Filled.Info,
+                    modifier = Modifier.align(Alignment.Center)
                 )
             } else {
                 LazyColumn(
@@ -142,16 +152,8 @@ fun AdmittedPatientCard(
 ) {
     val dateStr = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(admissionDate))
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Text(text = patientName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    NightingaleElevatedCard {
+        Text(text = patientName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "Doctor: $doctorName")
             Text(text = "Room/Bed: $roomNumber")
@@ -165,5 +167,4 @@ fun AdmittedPatientCard(
                 Text("Discharge")
             }
         }
-    }
 }

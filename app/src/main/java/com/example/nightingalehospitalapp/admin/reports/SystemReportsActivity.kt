@@ -6,15 +6,23 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.admin.reports.SystemReportsViewModel
 
@@ -28,6 +36,7 @@ class SystemReportsActivity : ComponentActivity() {
         setContent {
             NightingaleHospitalAppTheme {
                 val activities by viewModel.activities.collectAsState()
+                val isLoading by viewModel.isLoading.collectAsState()
                 
                 Scaffold(
                     topBar = {
@@ -60,11 +69,18 @@ class SystemReportsActivity : ComponentActivity() {
                             color = MaterialTheme.colorScheme.primary
                         )
                         
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                        if (isLoading) {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                items(3) { NightingaleListShimmer() }
+                            }
+                        } else if (activities.isEmpty()) {
+                            NightingaleEmptyState(
+                                title = "No Recent Activity",
+                                message = "There is no recent activity to display.",
+                                icon = Icons.Filled.Info
+                            )
+                        } else {
+                            NightingaleElevatedCard {
                                 Text("Recent System Activities", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 activities.forEach { activity ->
@@ -76,17 +92,14 @@ class SystemReportsActivity : ComponentActivity() {
                         Spacer(modifier = Modifier.weight(1f))
                         
                         val context = androidx.compose.ui.platform.LocalContext.current
-                        Button(
+                        NightingalePrimaryButton(
+                            text = "Generate Full Report",
                             onClick = {
                                 viewModel.generateFullReport()
                                 android.widget.Toast.makeText(context, "Report generated successfully!", android.widget.Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-                        ) {
-                            Icon(Icons.Filled.CheckCircle, contentDescription = "Generate")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Generate Full Report")
-                        }
+                        )
                     }
                 }
             }

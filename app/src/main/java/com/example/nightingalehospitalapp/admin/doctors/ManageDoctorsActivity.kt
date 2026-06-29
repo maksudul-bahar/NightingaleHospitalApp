@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -29,6 +30,12 @@ import com.example.nightingalehospitalapp.models.user.Doctor
 import com.example.nightingalehospitalapp.models.user.User
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.admin.doctors.ManageDoctorsViewModel
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextButton
+import com.example.nightingalehospitalapp.ui.components.DoctorCardShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import androidx.compose.animation.Crossfade
 
 class ManageDoctorsActivity : ComponentActivity() {
     private val viewModel: ManageDoctorsViewModel by viewModels()
@@ -78,49 +85,76 @@ class ManageDoctorsActivity : ComponentActivity() {
                                 navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         )
-                    }
+                    },
+                    containerColor = MaterialTheme.colorScheme.background
                 ) { paddingValues ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
                     ) {
-                        TabRow(selectedTabIndex = selectedTabIndex) {
+                        val isLoading by viewModel.isLoading.collectAsState()
+
+                        TabRow(
+                            selectedTabIndex = selectedTabIndex,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.primary
+                        ) {
                             Tab(selected = selectedTabIndex == 0, onClick = { selectedTabIndex = 0 }, text = { Text("Approved") })
                             Tab(selected = selectedTabIndex == 1, onClick = { selectedTabIndex = 1 }, text = { Text("Pending") })
                         }
                         
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            if (selectedTabIndex == 0) {
-                                items(approvedDoctors) { doctor ->
-                                    DoctorProfileCard(
-                                        doctor = doctor,
-                                        departments = departments,
-                                        onEdit = {
-                                            editingDoctor = doctor
-                                            showDialog = true
-                                        },
-                                        onDelete = { viewModel.removeDoctor(doctor.doctorId) }
-                                    )
-                                }
-                                if (approvedDoctors.isEmpty()) {
-                                    item { Text("No approved doctors found", modifier = Modifier.padding(16.dp)) }
-                                }
-                            } else {
-                                items(pendingDoctors) { user ->
-                                    PendingDoctorCard(
-                                        user = user,
-                                        onApprove = { viewModel.approveDoctor(user) },
-                                        onReject = { viewModel.rejectDoctor(user) }
-                                    )
-                                }
-                                if (pendingDoctors.isEmpty()) {
-                                    item { Text("No pending doctors found", modifier = Modifier.padding(16.dp)) }
+                        Crossfade(targetState = selectedTabIndex, label = "tabTransition") { tabIndex ->
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                if (isLoading) {
+                                    items(3) {
+                                        DoctorCardShimmer()
+                                    }
+                                } else if (tabIndex == 0) {
+                                    if (approvedDoctors.isEmpty()) {
+                                        item { 
+                                            NightingaleEmptyState(
+                                                title = "No Approved Doctors",
+                                                message = "There are currently no approved doctors in the system.",
+                                                icon = Icons.Filled.Info
+                                            )
+                                        }
+                                    } else {
+                                        items(approvedDoctors) { doctor ->
+                                            DoctorProfileCard(
+                                                doctor = doctor,
+                                                departments = departments,
+                                                onEdit = {
+                                                    editingDoctor = doctor
+                                                    showDialog = true
+                                                },
+                                                onDelete = { viewModel.removeDoctor(doctor.doctorId) }
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    if (pendingDoctors.isEmpty()) {
+                                        item { 
+                                            NightingaleEmptyState(
+                                                title = "No Pending Doctors",
+                                                message = "All doctors have been approved or rejected.",
+                                                icon = Icons.Filled.Check
+                                            )
+                                        }
+                                    } else {
+                                        items(pendingDoctors) { user ->
+                                            PendingDoctorCard(
+                                                user = user,
+                                                onApprove = { viewModel.approveDoctor(user) },
+                                                onReject = { viewModel.rejectDoctor(user) }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -150,10 +184,10 @@ fun DoctorDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Profile") },
+        title = { Text("Edit Profile", style = MaterialTheme.typography.titleLarge) },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 OutlinedTextField(
@@ -161,27 +195,25 @@ fun DoctorDialog(
                     onValueChange = { },
                     label = { Text("User ID") },
                     singleLine = true,
-                    enabled = false 
+                    enabled = false,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
+                NightingaleTextField(
                     value = specialization,
                     onValueChange = { specialization = it },
-                    label = { Text("Specialization") },
-                    singleLine = true
+                    label = "Specialization"
                 )
-                OutlinedTextField(
+                NightingaleTextField(
                     value = qualification,
                     onValueChange = { qualification = it },
-                    label = { Text("Qualification") },
-                    singleLine = true
+                    label = "Qualification"
                 )
-                OutlinedTextField(
-                        value = experience,
-                        onValueChange = { experience = it },
-                        label = { Text("Experience (Years)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true
-                    )
+                NightingaleTextField(
+                    value = experience,
+                    onValueChange = { experience = it },
+                    label = "Experience (Years)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
                     
                 ExposedDropdownMenuBox(
                     expanded = departmentExpanded,
@@ -198,7 +230,9 @@ fun DoctorDialog(
                         label = { Text("Department") },
                         placeholder = { Text("Select or search department") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = departmentExpanded) },
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = departmentExpanded,
@@ -219,24 +253,26 @@ fun DoctorDialog(
             }
         },
         confirmButton = {
-            Button(onClick = {
-                if (initialDoctor != null) {
-                    val doc = initialDoctor.copy(
-                        specialization = specialization,
-                        qualification = qualification,
-                        experienceYears = experience.toIntOrNull() ?: 0,
-                        departmentId = selectedDepartmentId
-                    )
-                    onSave(doc)
+            NightingaleTextButton(
+                text = "Save",
+                onClick = {
+                    if (initialDoctor != null) {
+                        val doc = initialDoctor.copy(
+                            specialization = specialization,
+                            qualification = qualification,
+                            experienceYears = experience.toIntOrNull() ?: 0,
+                            departmentId = selectedDepartmentId
+                        )
+                        onSave(doc)
+                    }
                 }
-            }) {
-                Text("Save")
-            }
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            NightingaleTextButton(
+                text = "Cancel",
+                onClick = onDismiss
+            )
         }
     )
 }
@@ -249,38 +285,29 @@ fun DoctorProfileCard(
     onDelete: () -> Unit
 ) {
     val departmentName = departments.find { it.departmentId == doctor.departmentId }?.name ?: "N/A"
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+    NightingaleElevatedCard {
+        Text(text = doctor.name.ifEmpty { "Name not provided" }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(text = "Email: ${doctor.email}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "Department: $departmentName", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "Specialty: ${doctor.specialization.ifEmpty { "N/A" }}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
+        Text(text = "Qualification: ${doctor.qualification.ifEmpty { "N/A" }}", style = MaterialTheme.typography.bodySmall)
+        Text(text = "Experience: ${doctor.experienceYears} Years", style = MaterialTheme.typography.bodySmall)
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = doctor.name.ifEmpty { "Name not provided" }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(text = "Email: ${doctor.email}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Department: $departmentName", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Specialty: ${doctor.specialization.ifEmpty { "N/A" }}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
-            Text(text = "Qualification: ${doctor.qualification.ifEmpty { "N/A" }}", style = MaterialTheme.typography.bodySmall)
-            Text(text = "Experience: ${doctor.experienceYears} Years", style = MaterialTheme.typography.bodySmall)
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Filled.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = { /* Schedule Logic */ }) {
-                    Icon(Icons.Filled.DateRange, contentDescription = "Manage Schedule", tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Remove Profile", tint = MaterialTheme.colorScheme.error)
-                }
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = { /* Schedule Logic */ }) {
+                Icon(Icons.Filled.DateRange, contentDescription = "Manage Schedule", tint = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Filled.Delete, contentDescription = "Remove Profile", tint = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -292,30 +319,21 @@ fun PendingDoctorCard(
     onApprove: () -> Unit,
     onReject: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+    NightingaleElevatedCard {
+        Text(text = user.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(text = "Email: ${user.email}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
         ) {
-            Text(text = user.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(text = "Email: ${user.email}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(onClick = onApprove) {
-                    Icon(Icons.Filled.Check, contentDescription = "Approve", tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onReject) {
-                    Icon(Icons.Filled.Clear, contentDescription = "Reject", tint = MaterialTheme.colorScheme.error)
-                }
+            IconButton(onClick = onApprove) {
+                Icon(Icons.Filled.Check, contentDescription = "Approve", tint = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = onReject) {
+                Icon(Icons.Filled.Clear, contentDescription = "Reject", tint = MaterialTheme.colorScheme.error)
             }
         }
     }

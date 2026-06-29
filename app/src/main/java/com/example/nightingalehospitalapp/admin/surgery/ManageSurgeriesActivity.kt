@@ -24,6 +24,10 @@ import com.example.nightingalehospitalapp.models.enums.SurgeryStatus
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.admin.surgery.ManageSurgeriesViewModel
 import com.example.nightingalehospitalapp.viewmodel.admin.surgery.SurgeryBookingItem
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import androidx.compose.material.icons.filled.Info
 
 /**
  * Lists surgery bookings.
@@ -131,16 +135,17 @@ fun ManageSurgeriesScreen(
                 .padding(16.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(4) { NightingaleListShimmer() }
+                }
             } else if (surgeries.isEmpty()) {
-                Text(
-                    text = if (isDoctorScope) {
-                        "No surgeries have been assigned to you yet."
-                    } else {
-                        "No surgeries scheduled."
-                    },
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge
+                NightingaleEmptyState(
+                    title = "No Surgeries",
+                    message = if (isDoctorScope) "No surgeries have been assigned to you yet." else "No surgeries scheduled.",
+                    icon = Icons.Filled.Info,
+                    modifier = Modifier.align(Alignment.Center)
                 )
             } else {
                 LazyColumn(
@@ -185,13 +190,9 @@ fun SurgeryCard(
     onStatusChange: (SurgeryStatus) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
+    NightingaleElevatedCard {
         Column(
             modifier = Modifier
-                .padding(16.dp)
                 .fillMaxWidth()
         ) {
             Text(

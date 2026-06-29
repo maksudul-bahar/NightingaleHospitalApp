@@ -27,6 +27,11 @@ import com.example.nightingalehospitalapp.models.enums.TestStatus
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.admin.diagnostic.ManageTestBookingsViewModel
 import com.example.nightingalehospitalapp.viewmodel.admin.diagnostic.TestBookingItem
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import androidx.compose.material.icons.filled.Info
 
 class ManageTestBookingsActivity : ComponentActivity() {
 
@@ -104,12 +109,17 @@ fun ManageTestBookingsScreen(
                 .padding(16.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(4) { NightingaleListShimmer() }
+                }
             } else if (testBookings.isEmpty()) {
-                Text(
-                    text = "No diagnostic tests booked.",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge
+                NightingaleEmptyState(
+                    title = "No Test Bookings",
+                    message = "There are no diagnostic tests scheduled.",
+                    icon = Icons.Filled.Info,
+                    modifier = Modifier.align(Alignment.Center)
                 )
             } else {
                 LazyColumn(
@@ -169,16 +179,8 @@ fun TestBookingCard(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Text(text = booking.testName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    NightingaleElevatedCard {
+        Text(text = booking.testName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "Patient: ${booking.patientName}")
             Text(text = "Doctor: ${booking.doctorName}")
@@ -217,14 +219,12 @@ fun TestBookingCard(
             
             if (booking.status != TestStatus.COMPLETED) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
+                NightingalePrimaryButton(
+                    text = "Upload Result",
                     onClick = onUploadResult,
                     modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Upload Result")
-                }
+                )
             }
-        }
     }
 }
 

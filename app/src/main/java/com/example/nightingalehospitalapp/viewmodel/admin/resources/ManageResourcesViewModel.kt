@@ -11,6 +11,7 @@ import com.example.nightingalehospitalapp.repository.diagnostic.DiagnosticReposi
 import com.example.nightingalehospitalapp.repository.surgery.SurgeryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class ManageResourcesViewModel(
     private val bedRepository: BedRepository = BedRepository(),
@@ -30,18 +31,40 @@ class ManageResourcesViewModel(
     private val _departments = MutableStateFlow<List<Department>>(emptyList())
     val departments: StateFlow<List<Department>> = _departments
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
     init {
+        var bedsLoaded = false
+        var theatresLoaded = false
+        var testsLoaded = false
+        var departmentsLoaded = false
+
+        fun checkLoading() {
+            if (bedsLoaded && theatresLoaded && testsLoaded && departmentsLoaded) {
+                _isLoading.value = false
+            }
+        }
+
         FirebaseConfig.bedsRef.addSnapshotListener { snapshot, _ ->
             if (snapshot != null) _beds.value = snapshot.toObjects(Bed::class.java)
+            bedsLoaded = true
+            checkLoading()
         }
         FirebaseConfig.operationTheatresRef.addSnapshotListener { snapshot, _ ->
             if (snapshot != null) _theatres.value = snapshot.toObjects(OperationTheatre::class.java)
+            theatresLoaded = true
+            checkLoading()
         }
         FirebaseConfig.diagnosticTestsRef.addSnapshotListener { snapshot, _ ->
             if (snapshot != null) _tests.value = snapshot.toObjects(DiagnosticTest::class.java)
+            testsLoaded = true
+            checkLoading()
         }
         FirebaseConfig.departmentsRef.addSnapshotListener { snapshot, _ ->
             if (snapshot != null) _departments.value = snapshot.toObjects(Department::class.java)
+            departmentsLoaded = true
+            checkLoading()
         }
     }
 

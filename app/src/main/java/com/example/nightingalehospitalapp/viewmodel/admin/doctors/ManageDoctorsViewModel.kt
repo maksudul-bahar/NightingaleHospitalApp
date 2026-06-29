@@ -8,7 +8,7 @@ import com.example.nightingalehospitalapp.models.user.User
 import com.example.nightingalehospitalapp.repository.user.DoctorRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-
+import kotlinx.coroutines.flow.asStateFlow
 class ManageDoctorsViewModel(
     private val doctorRepository: DoctorRepository = DoctorRepository()
 ) : ViewModel() {
@@ -22,11 +22,25 @@ class ManageDoctorsViewModel(
     private val _departments = MutableStateFlow<List<Department>>(emptyList())
     val departments: StateFlow<List<Department>> = _departments
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
     init {
+        var doctorsLoaded = false
+        var pendingLoaded = false
+
+        fun checkLoading() {
+            if (doctorsLoaded && pendingLoaded) {
+                _isLoading.value = false
+            }
+        }
+
         FirebaseConfig.doctorsRef.addSnapshotListener { snapshot, error ->
             if (error == null && snapshot != null) {
                 _approvedDoctors.value = snapshot.toObjects(Doctor::class.java)
             }
+            doctorsLoaded = true
+            checkLoading()
         }
 
         FirebaseConfig.usersRef
@@ -36,6 +50,8 @@ class ManageDoctorsViewModel(
                 if (error == null && snapshot != null) {
                     _pendingDoctors.value = snapshot.toObjects(User::class.java)
                 }
+                pendingLoaded = true
+                checkLoading()
             }
 
         FirebaseConfig.departmentsRef.addSnapshotListener { snapshot, error ->

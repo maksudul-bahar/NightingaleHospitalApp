@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +28,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nightingalehospitalapp.models.prescription.Medicine
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.admin.resources.MedicineInventoryViewModel
 
@@ -99,7 +106,12 @@ fun MedicineInventoryScreen(
         ) {
             when (val state = uiState) {
                 is MedicineInventoryViewModel.UiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(4) { NightingaleListShimmer() }
+                    }
                 }
                 is MedicineInventoryViewModel.UiState.Error -> {
                     Text(
@@ -110,8 +122,10 @@ fun MedicineInventoryScreen(
                 }
                 is MedicineInventoryViewModel.UiState.Loaded -> {
                     if (state.medicines.isEmpty()) {
-                        Text(
-                            text = "No medicines found in inventory.",
+                        NightingaleEmptyState(
+                            title = "No Medicines Found",
+                            message = "Your medicine inventory is empty. Add medicines to get started.",
+                            icon = Icons.Filled.Info,
                             modifier = Modifier.align(Alignment.Center)
                         )
                     } else {
@@ -180,17 +194,11 @@ fun MedicineInventoryScreen(
 
 @Composable
 fun MedicineCard(medicine: Medicine, onClick: (Medicine) -> Unit, onDelete: (Medicine) -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick(medicine) },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    NightingaleElevatedCard(
+        modifier = Modifier.clickable { onClick(medicine) }
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -250,53 +258,40 @@ fun AddMedicineDialog(
         title = { Text("Add New Medicine") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                NightingaleTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Medicine Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    label = "Medicine Name"
                 )
-                OutlinedTextField(
+                NightingaleTextField(
                     value = manufacturer,
                     onValueChange = { manufacturer = it },
-                    label = { Text("Manufacturer") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    label = "Manufacturer"
                 )
-                OutlinedTextField(
+                NightingaleTextField(
                     value = stockText,
                     onValueChange = { stockText = it },
-                    label = { Text("Initial Stock") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    label = "Initial Stock"
                 )
-                OutlinedTextField(
+                NightingaleTextField(
                     value = priceText,
                     onValueChange = { priceText = it },
-                    label = { Text("Price ($)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    label = "Price ($)"
                 )
             }
         },
         confirmButton = {
-            TextButton(
+            NightingalePrimaryButton(
                 onClick = {
                     val stock = stockText.toIntOrNull() ?: 0
                     val price = priceText.toDoubleOrNull() ?: 0.0
                     onAdd(name.trim(), manufacturer.trim(), stock, price)
-                }
-            ) {
-                Text("Add")
-            }
+                },
+                text = "Add"
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            NightingaleTextButton(onClick = onDismiss, text = "Cancel")
         }
     )
 }
@@ -317,40 +312,31 @@ fun UpdateDetailsDialog(
             Column {
                 Text("Updating details for ${medicine.name}")
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
+                NightingaleTextField(
                     value = stockText,
                     onValueChange = { stockText = it },
-                    label = { Text("New Stock") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    label = "New Stock"
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
+                NightingaleTextField(
                     value = priceText,
                     onValueChange = { priceText = it },
-                    label = { Text("New Price ($)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    label = "New Price ($)"
                 )
             }
         },
         confirmButton = {
-            TextButton(
+            NightingalePrimaryButton(
                 onClick = {
                     val newStock = stockText.toIntOrNull() ?: 0
                     val newPrice = priceText.toDoubleOrNull() ?: 0.0
                     onUpdate(newStock, newPrice)
-                }
-            ) {
-                Text("Update")
-            }
+                },
+                text = "Update"
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            NightingaleTextButton(onClick = onDismiss, text = "Cancel")
         }
     )
 }

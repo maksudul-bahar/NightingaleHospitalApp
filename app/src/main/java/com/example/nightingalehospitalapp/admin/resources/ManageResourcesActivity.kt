@@ -12,9 +12,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,12 @@ import com.example.nightingalehospitalapp.models.diagnostic.DiagnosticTest
 import com.example.nightingalehospitalapp.models.hospital.Bed
 import com.example.nightingalehospitalapp.models.hospital.Department
 import com.example.nightingalehospitalapp.models.hospital.OperationTheatre
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.admin.resources.ManageResourcesViewModel
 
@@ -41,6 +48,7 @@ class ManageResourcesActivity : ComponentActivity() {
                 val theatres by viewModel.theatres.collectAsState()
                 val tests by viewModel.tests.collectAsState()
                 val departments by viewModel.departments.collectAsState()
+                val isLoading by viewModel.isLoading.collectAsState()
                 
                 var showAddDialog by remember { mutableStateOf(false) }
 
@@ -91,11 +99,17 @@ class ManageResourcesActivity : ComponentActivity() {
                         }
                         
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            when (selectedTabIndex) {
-                                0 -> BedList(beds = beds, onDelete = { viewModel.removeBed(it) })
-                                1 -> OTList(theatres = theatres, onDelete = { viewModel.removeOperationTheatre(it) })
-                                2 -> TestList(tests = tests, onDelete = { viewModel.removeDiagnosticTest(it) })
-                                3 -> DepartmentList(departments = departments, onDelete = { viewModel.removeDepartment(it) })
+                            if (isLoading) {
+                                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    items(4) { NightingaleListShimmer() }
+                                }
+                            } else {
+                                when (selectedTabIndex) {
+                                    0 -> BedList(beds = beds, onDelete = { viewModel.removeBed(it) })
+                                    1 -> OTList(theatres = theatres, onDelete = { viewModel.removeOperationTheatre(it) })
+                                    2 -> TestList(tests = tests, onDelete = { viewModel.removeDiagnosticTest(it) })
+                                    3 -> DepartmentList(departments = departments, onDelete = { viewModel.removeDepartment(it) })
+                                }
                             }
                         }
                     }
@@ -107,15 +121,19 @@ class ManageResourcesActivity : ComponentActivity() {
 
 @Composable
 fun BedList(beds: List<Bed>, onDelete: (String) -> Unit) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(beds) { bed ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
-                        Text("Room: ${bed.roomNumber}", fontWeight = FontWeight.Bold)
-                        Text("Ward: ${bed.ward}")
+    if (beds.isEmpty()) {
+        NightingaleEmptyState(title = "No Beds", message = "Add beds to manage patient rooms.", icon = Icons.Filled.Info)
+    } else {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(beds) { bed ->
+                NightingaleElevatedCard {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Room: ${bed.roomNumber}", fontWeight = FontWeight.Bold)
+                            Text("Ward: ${bed.ward}")
+                        }
+                        IconButton(onClick = { onDelete(bed.bedId) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
                     }
-                    IconButton(onClick = { onDelete(bed.bedId) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
                 }
             }
         }
@@ -131,26 +149,30 @@ fun AddBedDialog(onDismiss: () -> Unit, onSave: (Bed) -> Unit) {
         title = { Text("Add Bed") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = room, onValueChange = { room = it }, label = { Text("Room Number") })
-                OutlinedTextField(value = ward, onValueChange = { ward = it }, label = { Text("Ward") })
+                NightingaleTextField(value = room, onValueChange = { room = it }, label = "Room Number")
+                NightingaleTextField(value = ward, onValueChange = { ward = it }, label = "Ward")
             }
         },
-        confirmButton = { Button(onClick = { onSave(Bed(roomNumber = room, ward = ward)) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { NightingalePrimaryButton(onClick = { onSave(Bed(roomNumber = room, ward = ward)) }, text = "Save") },
+        dismissButton = { NightingaleTextButton(onClick = onDismiss, text = "Cancel") }
     )
 }
 
 @Composable
 fun OTList(theatres: List<OperationTheatre>, onDelete: (String) -> Unit) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(theatres) { ot ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
-                        Text("Room: ${ot.roomNumber}", fontWeight = FontWeight.Bold)
-                        Text("Floor: ${ot.floor}")
+    if (theatres.isEmpty()) {
+        NightingaleEmptyState(title = "No Operation Theatres", message = "Add operation theatres to schedule surgeries.", icon = Icons.Filled.Info)
+    } else {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(theatres) { ot ->
+                NightingaleElevatedCard {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Room: ${ot.roomNumber}", fontWeight = FontWeight.Bold)
+                            Text("Floor: ${ot.floor}")
+                        }
+                        IconButton(onClick = { onDelete(ot.otId) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
                     }
-                    IconButton(onClick = { onDelete(ot.otId) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
                 }
             }
         }
@@ -166,26 +188,30 @@ fun AddOTDialog(onDismiss: () -> Unit, onSave: (OperationTheatre) -> Unit) {
         title = { Text("Add Operation Theatre") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = room, onValueChange = { room = it }, label = { Text("Room Number") })
-                OutlinedTextField(value = floor, onValueChange = { floor = it }, label = { Text("Floor") })
+                NightingaleTextField(value = room, onValueChange = { room = it }, label = "Room Number")
+                NightingaleTextField(value = floor, onValueChange = { floor = it }, label = "Floor")
             }
         },
-        confirmButton = { Button(onClick = { onSave(OperationTheatre(roomNumber = room, floor = floor)) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { NightingalePrimaryButton(onClick = { onSave(OperationTheatre(roomNumber = room, floor = floor)) }, text = "Save") },
+        dismissButton = { NightingaleTextButton(onClick = onDismiss, text = "Cancel") }
     )
 }
 
 @Composable
 fun TestList(tests: List<DiagnosticTest>, onDelete: (String) -> Unit) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(tests) { test ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
-                        Text(test.testName, fontWeight = FontWeight.Bold)
-                        Text("Price: $${test.price}")
+    if (tests.isEmpty()) {
+        NightingaleEmptyState(title = "No Tests", message = "Add diagnostic tests to the catalog.", icon = Icons.Filled.Info)
+    } else {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(tests) { test ->
+                NightingaleElevatedCard {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text(test.testName, fontWeight = FontWeight.Bold)
+                            Text("Price: $${test.price}")
+                        }
+                        IconButton(onClick = { onDelete(test.testId) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
                     }
-                    IconButton(onClick = { onDelete(test.testId) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
                 }
             }
         }
@@ -201,26 +227,30 @@ fun AddTestDialog(onDismiss: () -> Unit, onSave: (DiagnosticTest) -> Unit) {
         title = { Text("Add Test") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Test Name") })
-                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Price") })
+                NightingaleTextField(value = name, onValueChange = { name = it }, label = "Test Name")
+                NightingaleTextField(value = price, onValueChange = { price = it }, label = "Price")
             }
         },
-        confirmButton = { Button(onClick = { onSave(DiagnosticTest(testName = name, price = price.toDoubleOrNull() ?: 0.0)) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { NightingalePrimaryButton(onClick = { onSave(DiagnosticTest(testName = name, price = price.toDoubleOrNull() ?: 0.0)) }, text = "Save") },
+        dismissButton = { NightingaleTextButton(onClick = onDismiss, text = "Cancel") }
     )
 }
 
 @Composable
 fun DepartmentList(departments: List<Department>, onDelete: (String) -> Unit) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(departments) { dept ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
-                        Text(dept.name, fontWeight = FontWeight.Bold)
-                        Text(dept.description)
+    if (departments.isEmpty()) {
+        NightingaleEmptyState(title = "No Departments", message = "Add hospital departments to organize doctors.", icon = Icons.Filled.Info)
+    } else {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(departments) { dept ->
+                NightingaleElevatedCard {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text(dept.name, fontWeight = FontWeight.Bold)
+                            Text(dept.description)
+                        }
+                        IconButton(onClick = { onDelete(dept.departmentId) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
                     }
-                    IconButton(onClick = { onDelete(dept.departmentId) }) { Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
                 }
             }
         }
@@ -236,11 +266,11 @@ fun AddDepartmentDialog(onDismiss: () -> Unit, onSave: (Department) -> Unit) {
         title = { Text("Add Department") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Department Name") })
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") })
+                NightingaleTextField(value = name, onValueChange = { name = it }, label = "Department Name")
+                NightingaleTextField(value = description, onValueChange = { description = it }, label = "Description")
             }
         },
-        confirmButton = { Button(onClick = { onSave(Department(name = name, description = description)) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { NightingalePrimaryButton(onClick = { onSave(Department(name = name, description = description)) }, text = "Save") },
+        dismissButton = { NightingaleTextButton(onClick = onDismiss, text = "Cancel") }
     )
 }
