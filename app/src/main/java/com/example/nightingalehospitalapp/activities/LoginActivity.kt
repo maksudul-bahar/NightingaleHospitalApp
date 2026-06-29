@@ -19,7 +19,10 @@ import com.example.nightingalehospitalapp.viewmodel.AuthViewModel
 import com.example.nightingalehospitalapp.admin.AdminDashboardActivity
 import com.example.nightingalehospitalapp.doctor.DoctorDashboardActivity
 import com.example.nightingalehospitalapp.patient.PatientDashboardActivity
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
+import kotlinx.coroutines.launch
 
 class LoginActivity : ComponentActivity() {
 
@@ -44,13 +47,16 @@ fun LoginScreen(viewModel: AuthViewModel) {
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Login") }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -60,32 +66,35 @@ fun LoginScreen(viewModel: AuthViewModel) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            OutlinedTextField(
+            NightingaleTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label = "Email",
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
+            NightingaleTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = "Password",
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
+            NightingalePrimaryButton(
+                text = "Login",
                 onClick = {
                     if (email.isEmpty() || password.isEmpty()) {
-                        Toast.makeText(context, "Enter email and password", Toast.LENGTH_SHORT).show()
-                        return@Button
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Enter email and password")
+                        }
+                        return@NightingalePrimaryButton
                     }
                     viewModel.loginUser(email, password) { role, error ->
                         if (error != null) {
-                            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(error)
+                            }
                         } else {
                             when (role) {
                                 "ADMIN" -> {
@@ -104,16 +113,16 @@ fun LoginScreen(viewModel: AuthViewModel) {
                                     context.startActivity(intent)
                                 }
                                 else -> {
-                                    Toast.makeText(context, "Invalid role", Toast.LENGTH_LONG).show()
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Invalid role")
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Login")
-            }
+            )
         }
     }
 }

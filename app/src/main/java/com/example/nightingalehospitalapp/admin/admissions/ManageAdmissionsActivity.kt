@@ -67,10 +67,12 @@ fun ManageAdmissionsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
         }
     }
 
@@ -94,7 +96,8 @@ fun ManageAdmissionsScreen(
             FloatingActionButton(onClick = onNavigateToCreate) {
                 Icon(Icons.Filled.Add, contentDescription = "Admit Patient")
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -130,6 +133,7 @@ fun ManageAdmissionsScreen(
                                     if (success) {
                                         Toast.makeText(context, "Patient Discharged", Toast.LENGTH_SHORT).show()
                                     } else {
+                                        // Ideally use a coroutine to show snackbar here, but keeping toast for success/failure callback for simplicity, or we can emit to a new flow. Let's just use toast for the callback.
                                         Toast.makeText(context, "Error: $msg", Toast.LENGTH_SHORT).show()
                                     }
                                 }

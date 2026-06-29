@@ -65,6 +65,7 @@ fun MedicineInventoryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val actionMessage by viewModel.actionMessage.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedMedicine by remember { mutableStateOf<Medicine?>(null) }
@@ -72,7 +73,7 @@ fun MedicineInventoryScreen(
 
     LaunchedEffect(actionMessage) {
         actionMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            snackbarHostState.showSnackbar(it)
             viewModel.clearActionMessage()
         }
     }
@@ -93,6 +94,7 @@ fun MedicineInventoryScreen(
                 )
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add Medicine")

@@ -49,8 +49,17 @@ class ManageResourcesActivity : ComponentActivity() {
                 val tests by viewModel.tests.collectAsState()
                 val departments by viewModel.departments.collectAsState()
                 val isLoading by viewModel.isLoading.collectAsState()
+                val errorMessage by viewModel.errorMessage.collectAsState()
+                val snackbarHostState = remember { SnackbarHostState() }
                 
                 var showAddDialog by remember { mutableStateOf(false) }
+
+                LaunchedEffect(errorMessage) {
+                    errorMessage?.let {
+                        snackbarHostState.showSnackbar(it)
+                        viewModel.clearError()
+                    }
+                }
 
                 if (showAddDialog) {
                     when (selectedTabIndex) {
@@ -77,6 +86,7 @@ class ManageResourcesActivity : ComponentActivity() {
                             )
                         )
                     },
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                     floatingActionButton = {
                         FloatingActionButton(onClick = { showAddDialog = true }) {
                             Icon(Icons.Filled.Add, contentDescription = "Add")

@@ -34,10 +34,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import com.example.nightingalehospitalapp.models.appointment.Appointment
+import com.example.nightingalehospitalapp.models.enums.AppointmentStatus
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
+import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,10 +53,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nightingalehospitalapp.models.appointment.Appointment
-import com.example.nightingalehospitalapp.models.enums.AppointmentStatus
-import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.AppointmentViewModel
+import androidx.compose.material.icons.filled.Person
 
 class PatientsListActivity : ComponentActivity() {
 
@@ -66,22 +69,10 @@ class PatientsListActivity : ComponentActivity() {
 
         setContent {
             NightingaleHospitalAppTheme {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = { Text("My Patients") },
-                            navigationIcon = {
-                                IconButton(onClick = { finish() }) {
-                                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        )
-                    }
+                NightingaleUserScaffold(
+                    title = "My Patients",
+                    showBottomBar = false,
+                    onNavigateBack = { finish() }
                 ) { padding ->
                     PatientsContent(
                         modifier = Modifier
@@ -141,10 +132,11 @@ private fun PatientsContent(
 
     when (val s = state) {
         AppointmentViewModel.UiState.Idle,
-        AppointmentViewModel.UiState.Loading -> Box(
-            modifier = modifier,
-            contentAlignment = Alignment.Center
-        ) { CircularProgressIndicator() }
+        AppointmentViewModel.UiState.Loading -> {
+            LazyColumn(modifier = modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(3) { NightingaleListShimmer() }
+            }
+        }
 
         is AppointmentViewModel.UiState.Error -> Box(
             modifier = modifier,
@@ -160,12 +152,13 @@ private fun PatientsContent(
             val rows = remember(s.appointments) { aggregatePatients(s.appointments) }
             if (rows.isEmpty()) {
                 Box(
-                    modifier = modifier,
+                    modifier = modifier.padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "No patients yet.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    NightingaleEmptyState(
+                        title = "No patients yet",
+                        message = "Confirmed appointments will appear here.",
+                        icon = Icons.Filled.Person
                     )
                 }
             } else {
@@ -193,13 +186,10 @@ private fun PatientRowCard(
     row: PatientRow,
     onClick: () -> Unit
 ) {
-    Card(
+    NightingaleElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

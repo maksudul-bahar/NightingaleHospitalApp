@@ -49,6 +49,8 @@ class AdminDashboardActivity : ComponentActivity() {
 fun AdminDashboardScreen() {
     val context = LocalContext.current
     var userName by remember { mutableStateOf("Admin") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
@@ -61,9 +63,16 @@ fun AdminDashboardScreen() {
                         userName = document.getString("name") ?: "Admin"
                     }
                 }
-                .addOnFailureListener {
-                    // Handle error
+                .addOnFailureListener { e ->
+                    errorMessage = "Failed to load profile: ${e.message}"
                 }
+        }
+    }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            errorMessage = null
         }
     }
 
@@ -85,6 +94,7 @@ fun AdminDashboardScreen() {
                 )
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(

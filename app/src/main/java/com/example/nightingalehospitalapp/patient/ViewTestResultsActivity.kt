@@ -21,6 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nightingalehospitalapp.models.test.TestResult
 import com.example.nightingalehospitalapp.models.test.TestEntry
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.TestResultViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -53,27 +57,15 @@ fun ViewTestResultsScreen(
 ) {
     val uiState by viewModel.state.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Test Results") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
+    NightingaleUserScaffold(
+        title = "My Test Results",
+        showBottomBar = false,
+        onNavigateBack = onBack
     ) { padding ->
         when (val state = uiState) {
             is TestResultViewModel.UiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(3) { NightingaleListShimmer() }
                 }
             }
             is TestResultViewModel.UiState.Error -> {
@@ -83,8 +75,12 @@ fun ViewTestResultsScreen(
             }
             is TestResultViewModel.UiState.Loaded -> {
                 if (state.testResults.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                        Text(text = "No test results found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                        NightingaleEmptyState(
+                            title = "No test results",
+                            message = "Test results will appear here once they are uploaded.",
+                            icon = Icons.Filled.Assignment
+                        )
                     }
                 } else {
                     LazyColumn(
@@ -105,11 +101,8 @@ fun ViewTestResultsScreen(
 
 @Composable
 fun TestResultCard(testResult: TestResult) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    NightingaleElevatedCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

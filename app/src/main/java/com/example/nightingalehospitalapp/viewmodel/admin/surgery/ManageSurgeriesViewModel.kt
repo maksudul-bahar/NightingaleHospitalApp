@@ -64,6 +64,10 @@ class ManageSurgeriesViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    fun clearError() {
+        _errorMessage.value = null
+    }
+
     init {
         fetchSurgeries()
     }

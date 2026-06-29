@@ -70,13 +70,15 @@ fun ManageTestBookingsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var showUploadDialog by remember { mutableStateOf(false) }
     var selectedBooking by remember { mutableStateOf<TestBookingItem?>(null) }
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
         }
     }
 
@@ -100,7 +102,8 @@ fun ManageTestBookingsScreen(
             FloatingActionButton(onClick = onNavigateToBook) {
                 Icon(Icons.Filled.Add, contentDescription = "Book Test")
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier

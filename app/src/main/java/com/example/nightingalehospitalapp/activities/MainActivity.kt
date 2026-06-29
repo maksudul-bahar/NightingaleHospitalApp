@@ -17,6 +17,7 @@ import com.example.nightingalehospitalapp.database.FirebaseConfig
 import com.example.nightingalehospitalapp.doctor.DoctorDashboardActivity
 import com.example.nightingalehospitalapp.patient.PatientDashboardActivity
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
@@ -131,19 +132,17 @@ fun LaunchingDashboard(onLoginClick: () -> Unit, onRegisterClick: () -> Unit) {
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 32.dp)
             )
-            Button(
+            NightingalePrimaryButton(
+                text = "Login",
                 onClick = onLoginClick,
                 modifier = Modifier.fillMaxWidth(0.8f)
-            ) {
-                Text("Login")
-            }
+            )
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
+            NightingalePrimaryButton(
+                text = "Register",
                 onClick = onRegisterClick,
                 modifier = Modifier.fillMaxWidth(0.8f)
-            ) {
-                Text("Register")
-            }
+            )
         }
     }
 }

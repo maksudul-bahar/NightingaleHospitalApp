@@ -15,8 +15,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.example.nightingalehospitalapp.models.user.User
-import com.example.nightingalehospitalapp.viewmodel.AuthViewModel
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
+import com.example.nightingalehospitalapp.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 class RegisterActivity : ComponentActivity() {
 
@@ -47,12 +50,16 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit) {
     val roles = listOf("DOCTOR", "PATIENT")
     var expanded by remember { mutableStateOf(false) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Register") }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -62,49 +69,45 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            OutlinedTextField(
+            NightingaleTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Full Name") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label = "Full Name",
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
+            NightingaleTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label = "Email",
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
+            NightingaleTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = "Password",
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
+            NightingaleTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                label = { Text("Confirm Password") },
+                label = "Confirm Password",
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = it }
             ) {
-                OutlinedTextField(
+                NightingaleTextField(
                     value = selectedRole,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Role") },
+                    label = "Role",
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
                         .menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true)
@@ -126,15 +129,20 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
+            NightingalePrimaryButton(
+                text = "Register",
                 onClick = {
                     if (name.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || selectedRole.isEmpty()) {
-                        Toast.makeText(context, "All fields are required", Toast.LENGTH_SHORT).show()
-                        return@Button
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("All fields are required")
+                        }
+                        return@NightingalePrimaryButton
                     }
                     if (password != confirmPassword) {
-                        Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
-                        return@Button
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Passwords do not match")
+                        }
+                        return@NightingalePrimaryButton
                     }
                     val user = User(
                         userId = "",
@@ -148,14 +156,14 @@ fun RegisterScreen(viewModel: AuthViewModel, onRegisterSuccess: () -> Unit) {
                             Toast.makeText(context, "Registration successful", Toast.LENGTH_LONG).show()
                             onRegisterSuccess()
                         } else {
-                            Toast.makeText(context, error ?: "Registration failed", Toast.LENGTH_LONG).show()
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(error ?: "Registration failed")
+                            }
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Register")
-            }
+            )
         }
     }
 }

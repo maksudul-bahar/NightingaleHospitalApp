@@ -21,6 +21,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nightingalehospitalapp.models.prescription.Medicine
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.MedicineViewModel
 
@@ -51,22 +56,10 @@ fun ViewMedicineScreen(
     val uiState by viewModel.state.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Hospital Stock") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
+    NightingaleUserScaffold(
+        title = "Hospital Stock",
+        showBottomBar = false,
+        onNavigateBack = onBack
     ) { padding ->
         Column(
             modifier = Modifier
@@ -74,22 +67,20 @@ fun ViewMedicineScreen(
                 .padding(padding)
         ) {
             // Search Bar
-            OutlinedTextField(
+            NightingaleTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text("Search medicine...") },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                label = "Search medicine...",
+                leadingIcon = Icons.Filled.Search
             )
 
             when (val state = uiState) {
                 is MedicineViewModel.UiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(16.dp)) {
+                        items(4) { NightingaleListShimmer() }
                     }
                 }
                 is MedicineViewModel.UiState.Error -> {
@@ -104,9 +95,11 @@ fun ViewMedicineScreen(
                     }
 
                     if (filteredList.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(text = "No medicines found", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        NightingaleEmptyState(
+                            title = "No medicines found",
+                            message = "Try a different search query.",
+                            icon = Icons.Filled.Inventory
+                        )
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
@@ -127,11 +120,8 @@ fun ViewMedicineScreen(
 
 @Composable
 fun MedicineCard(medicine: Medicine) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    NightingaleElevatedCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier

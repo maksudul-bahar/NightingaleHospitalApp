@@ -13,8 +13,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +39,20 @@ class SystemReportsActivity : ComponentActivity() {
             NightingaleHospitalAppTheme {
                 val activities by viewModel.activities.collectAsState()
                 val isLoading by viewModel.isLoading.collectAsState()
+                val errorMessage by viewModel.errorMessage.collectAsState()
+                val actionMessage by viewModel.actionMessage.collectAsState()
+                val snackbarHostState = remember { SnackbarHostState() }
+
+                LaunchedEffect(errorMessage, actionMessage) {
+                    errorMessage?.let {
+                        snackbarHostState.showSnackbar(it)
+                        viewModel.clearMessage()
+                    }
+                    actionMessage?.let {
+                        snackbarHostState.showSnackbar(it)
+                        viewModel.clearMessage()
+                    }
+                }
                 
                 Scaffold(
                     topBar = {
@@ -53,7 +69,8 @@ class SystemReportsActivity : ComponentActivity() {
                                 navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         )
-                    }
+                    },
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
                 ) { paddingValues ->
                     Column(
                         modifier = Modifier
@@ -96,7 +113,6 @@ class SystemReportsActivity : ComponentActivity() {
                             text = "Generate Full Report",
                             onClick = {
                                 viewModel.generateFullReport()
-                                android.widget.Toast.makeText(context, "Report generated successfully!", android.widget.Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                         )

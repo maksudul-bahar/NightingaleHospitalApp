@@ -52,7 +52,7 @@ This folder contains pre-styled, standardized UI blocks. Whenever you are buildi
 2.  **`NightingaleTextFields.kt`**
     *   **Purpose:** Smart, robust text inputs.
     *   **Components:**
-        *   `NightingaleTextField(value, onValueChange, label, isError, errorMessage, ...)`: An outlined text field that automatically handles standard styling, rounded corners (12dp), and built-in error message displays.
+        *   `NightingaleTextField`: An outlined text field that automatically handles standard styling, rounded corners (12dp), and built-in error message displays. It supports advanced features such as `visualTransformation` (for passwords), `readOnly` states, and custom `leadingIcon` / `trailingIcon` components, making it flexible enough for registration forms and dropdown anchors.
 
 3.  **`NightingaleCards.kt`**
     *   **Purpose:** Consistent structural containers for grouping information (like a Patient Profile or a Test Result). Both variants enforce a standard `16.dp` internal padding.
@@ -74,7 +74,7 @@ This folder also contains scalable structural layout wrappers for the applicatio
     *   **Purpose:** Reusable Scaffolds for Role-Based Navigation across multiple activities.
     *   **Components:**
         *   `NightingaleAdminScaffold(title, context, currentActivityClass, content)`: Automatically wraps the screen in a `ModalNavigationDrawer` containing all the admin links (Manage Doctors, Surgeries, etc.) and provides a TopAppBar with a menu icon to open the drawer.
-        *   `NightingaleUserScaffold(title, currentTab, onTabSelected, showBottomBar, content)`: Automatically wraps the screen in a standard `Scaffold` with a Bottom `NavigationBar` for standard users (Patients/Doctors) to easily switch between Home, Appointments, and Profile.
+        *   `NightingaleUserScaffold(title, currentTab, onTabSelected, showBottomBar, onNavigateBack, snackbarHost, content)`: Automatically wraps the screen in a standard `Scaffold` with a Bottom `NavigationBar` for standard users (Patients/Doctors) to easily switch between Home, Appointments, and Profile. It natively supports top-bar backward navigation (`onNavigateBack`) and centralized error reporting (`snackbarHost`).
 
 ---
 
@@ -97,3 +97,33 @@ This folder contains components that add 'Wow' factor elements such as loading p
     *   **Purpose:** Beautiful centered layouts for empty lists.
     *   **Components:**
         *   `NightingaleEmptyState(title, message, icon)`: A standardized empty state with an illustrative icon and helpful text, ensuring users never stare at a blank screen.
+
+---
+
+## Phase 5: Reliability & Accessibility
+
+This phase focused on ensuring the application provides robust feedback for interactions and is resilient to failures.
+
+### Key Guidelines:
+1. **Centralized Error Handling (Snackbars):**
+    *   Legacy `Toast.makeText()` implementations have been completely deprecated across all patient, doctor, and admin modules.
+    *   **Usage:** UI activities must instantiate a `SnackbarHostState` and pass it to the `snackbarHost` parameter of `NightingaleUserScaffold` or `NightingaleAdminScaffold`. Actions that require feedback (success or failure) should trigger a Coroutine to show a Snackbar message, typically observed from a ViewModel's `StateFlow`.
+2. **Navigation Reliability:**
+    *   `NightingaleUserScaffold` now guarantees consistent 'Back' navigation via the `onNavigateBack` lambda, eliminating boilerplate `TopAppBar` configurations in individual activities.
+3. **Accessibility:**
+    *   Interactive components (`Icon`, `IconButton`, `Card`) have been audited to ensure valid `contentDescription` properties are provided where necessary, enabling screen reader compatibility.
+
+---
+
+## Phase 6: Modernizing Entry & Profile Activities
+
+The final phase ensured that the application's core entry points and standalone screens utilized the complete Nightingale Design System.
+
+### Key Enhancements:
+1. **Unified Authentication Flow:**
+    *   `LoginActivity` and `RegisterActivity` now utilize `NightingaleTextField` for all input, including password fields via `visualTransformation` and role selection via dropdown `trailingIcon` integration.
+    *   Registration validation errors are now elegantly presented via `SnackbarHost` rather than generic Toasts.
+2. **Standardized Primary Actions:**
+    *   The `MainActivity` (launching dashboard) and `ProfileActivity` leverage `NightingalePrimaryButton` to ensure the first and last interactions a user has with the app feel premium.
+3. **Profile Presentation:**
+    *   The user's profile information is presented in a `NightingaleElevatedCard` to maintain consistent visual depth with the rest of the application.

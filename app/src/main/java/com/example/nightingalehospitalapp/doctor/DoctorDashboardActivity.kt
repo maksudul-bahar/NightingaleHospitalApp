@@ -29,6 +29,7 @@ import com.example.nightingalehospitalapp.database.FirebaseConfig
 import com.example.nightingalehospitalapp.doctor.ManageSlotsActivity
 import com.example.nightingalehospitalapp.patient.DashboardCard
 import com.example.nightingalehospitalapp.patient.DashboardItem
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.google.firebase.auth.FirebaseAuth
 
@@ -49,6 +50,8 @@ class DoctorDashboardActivity : ComponentActivity() {
 fun DoctorDashboardScreen() {
     val context = LocalContext.current
     var userName by remember { mutableStateOf("Doctor") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
@@ -61,30 +64,36 @@ fun DoctorDashboardScreen() {
                         userName = document.getString("name") ?: "Doctor"
                     }
                 }
-                .addOnFailureListener {
-                    // Handle error
+                .addOnFailureListener { e ->
+                    errorMessage = "Failed to load profile: ${e.message}"
                 }
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Nightingale") },
-                actions = {
-                    IconButton(onClick = {
-                        context.startActivity(Intent(context, ProfileActivity::class.java))
-                    }) {
-                        Icon(Icons.Filled.AccountCircle, contentDescription = "Profile")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            errorMessage = null
         }
+    }
+
+    val doctorId = currentUser?.uid.orEmpty()
+
+    NightingaleUserScaffold(
+        title = "Nightingale",
+        currentTab = 0,
+        onTabSelected = { tabIndex ->
+            when (tabIndex) {
+                0 -> { /* Already on Home */ }
+                1 -> {
+                    val intent = Intent(context, MyAppointmentsActivity::class.java)
+                        .putExtra(MyAppointmentsActivity.EXTRA_DOCTOR_ID, doctorId)
+                    context.startActivity(intent)
+                }
+                2 -> context.startActivity(Intent(context, ProfileActivity::class.java))
+            }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -113,8 +122,6 @@ fun DoctorDashboardScreen() {
             )
             
             Spacer(modifier = Modifier.height(16.dp))
-
-            val doctorId = currentUser?.uid.orEmpty()
 
             val openAppointments = {
                 val intent = Intent(context, MyAppointmentsActivity::class.java)

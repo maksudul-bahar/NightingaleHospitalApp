@@ -31,11 +31,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
+import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -64,22 +66,10 @@ class PatientHistoryActivity : ComponentActivity() {
 
         setContent {
             NightingaleHospitalAppTheme {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = { Text("Patient History — $patientName") },
-                            navigationIcon = {
-                                IconButton(onClick = { finish() }) {
-                                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        )
-                    }
+                NightingaleUserScaffold(
+                    title = "Patient History — $patientName",
+                    showBottomBar = false,
+                    onNavigateBack = { finish() }
                 ) { padding ->
                     val state by viewModel.uiState.collectAsState()
                     HistoryScreen(
@@ -111,25 +101,20 @@ private fun HistoryScreen(
     when (state) {
         PatientHistoryViewModel.UiState.Idle,
         PatientHistoryViewModel.UiState.Loading -> {
-            Box(modifier = modifier, contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+            LazyColumn(
+                modifier = modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                items(3) { NightingaleListShimmer() }
             }
         }
         PatientHistoryViewModel.UiState.Empty -> {
             Box(modifier = modifier, contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "No medical history recorded yet",
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Prescriptions, tests and surgeries will appear here",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                NightingaleEmptyState(
+                    title = "No medical history recorded yet",
+                    message = "Prescriptions, tests and surgeries will appear here",
+                    icon = Icons.Filled.Info
+                )
             }
         }
         is PatientHistoryViewModel.UiState.Error -> {
@@ -188,10 +173,8 @@ private fun HistoryScreen(
 
 @Composable
 private fun PatientHeader(name: String, id: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    NightingaleElevatedCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -254,10 +237,8 @@ private fun EmptySection(text: String) {
 
 @Composable
 private fun PrescriptionRow(row: HistoryItem.PrescriptionRow) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    NightingaleElevatedCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -310,10 +291,8 @@ private fun PrescriptionRow(row: HistoryItem.PrescriptionRow) {
 
 @Composable
 private fun TestBookingRow(row: HistoryItem.TestBookingRow) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    NightingaleElevatedCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -348,10 +327,8 @@ private fun TestBookingRow(row: HistoryItem.TestBookingRow) {
 
 @Composable
 private fun SurgeryRow(row: HistoryItem.SurgeryRow) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    NightingaleElevatedCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

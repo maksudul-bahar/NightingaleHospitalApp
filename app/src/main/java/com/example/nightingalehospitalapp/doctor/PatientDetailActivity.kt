@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nightingalehospitalapp.patient.DashboardCard
 import com.example.nightingalehospitalapp.patient.DashboardItem
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 
 class PatientDetailActivity : ComponentActivity() {
@@ -58,23 +59,11 @@ class PatientDetailActivity : ComponentActivity() {
 fun PatientDetailScreen(patientId: String, patientName: String) {
     val context = LocalContext.current
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(patientName) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        (context as? ComponentActivity)?.finish()
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
+    NightingaleUserScaffold(
+        title = patientName,
+        showBottomBar = false,
+        onNavigateBack = {
+            (context as? ComponentActivity)?.finish()
         }
     ) { paddingValues ->
         Column(

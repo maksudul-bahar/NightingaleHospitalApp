@@ -92,10 +92,12 @@ fun ManageSurgeriesScreen(
     // flips scope (doctors arrive via intent extra after onCreate).
     val isDoctorScope by viewModel.isDoctorScope.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
         }
     }
 
@@ -126,7 +128,8 @@ fun ManageSurgeriesScreen(
                     Icon(Icons.Filled.Add, contentDescription = "Schedule Surgery")
                 }
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier

@@ -21,6 +21,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nightingalehospitalapp.models.appointment.Slot
 import com.example.nightingalehospitalapp.repository.user.DoctorWithUser
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.BookingViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -61,44 +65,33 @@ fun BookAppointmentScreen(viewModel: BookingViewModel, onBack: () -> Unit) {
     var selectedSlot by remember { mutableStateOf<Slot?>(null) }
     var notes by remember { mutableStateOf("") }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(Unit) {
         viewModel.fetchDoctors()
     }
 
-    // Slots are fetched explicitly when the user clicks the search button
-
     LaunchedEffect(bookingState) {
         when (bookingState) {
             is BookingViewModel.BookingState.Success -> {
-                Toast.makeText(context, "Appointment booked successfully!", Toast.LENGTH_SHORT).show()
+                snackbarHostState.showSnackbar("Appointment booked successfully!")
                 viewModel.resetBookingState()
                 onBack()
             }
             is BookingViewModel.BookingState.Error -> {
                 val msg = (bookingState as BookingViewModel.BookingState.Error).message
-                Toast.makeText(context, "Error: $msg", Toast.LENGTH_LONG).show()
+                snackbarHostState.showSnackbar("Error: $msg")
                 viewModel.resetBookingState()
             }
             else -> {}
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Book Appointment") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
+    NightingaleUserScaffold(
+        title = "Book Appointment",
+        showBottomBar = false,
+        onNavigateBack = onBack,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -127,12 +120,11 @@ fun BookAppointmentScreen(viewModel: BookingViewModel, onBack: () -> Unit) {
                 
                 LazyColumn {
                     items(doctors) { doctorWithUser ->
-                        Card(
+                        NightingaleElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
-                                .clickable { selectedDoctor = doctorWithUser },
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                .clickable { selectedDoctor = doctorWithUser }
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text("Dr. ${doctorWithUser.user.name}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
@@ -146,14 +138,15 @@ fun BookAppointmentScreen(viewModel: BookingViewModel, onBack: () -> Unit) {
                 Text("Booking with Dr. ${selectedDoctor!!.user.name}", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                OutlinedTextField(
+                NightingaleTextField(
                     value = selectedDate,
                     onValueChange = { selectedDate = it },
-                    label = { Text("Date (YYYY-MM-DD)") },
+                    label = "Date (YYYY-MM-DD)",
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
+                NightingalePrimaryButton(
+                    text = "Find Available Slots",
                     onClick = {
                         if (selectedDoctor != null && selectedDate.isNotEmpty()) {
                             viewModel.fetchAvailableSlots(selectedDoctor!!.user.userId, selectedDate.trim())
@@ -161,9 +154,7 @@ fun BookAppointmentScreen(viewModel: BookingViewModel, onBack: () -> Unit) {
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Find Available Slots")
-                }
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text("Available Slots", style = MaterialTheme.typography.titleMedium)
@@ -190,16 +181,16 @@ fun BookAppointmentScreen(viewModel: BookingViewModel, onBack: () -> Unit) {
                 }
                 
                 Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
+                NightingaleTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Notes/Symptoms") },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3
+                    label = "Notes/Symptoms",
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                Button(
+                NightingalePrimaryButton(
+                    text = if (bookingState is BookingViewModel.BookingState.Loading) "Loading..." else "Confirm Booking",
                     onClick = {
                         val auth = FirebaseAuth.getInstance()
                         val currentUser = auth.currentUser
@@ -213,22 +204,17 @@ fun BookAppointmentScreen(viewModel: BookingViewModel, onBack: () -> Unit) {
                                 notes = notes,
                                 slotId = selectedSlot!!.slotId
                             )
-                        } else {
-                            Toast.makeText(context, "Please select a valid time slot", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = selectedSlot != null && bookingState !is BookingViewModel.BookingState.Loading
-                ) {
-                    if (bookingState is BookingViewModel.BookingState.Loading) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
-                    } else {
-                        Text("Confirm Booking")
-                    }
-                }
+                )
                 
                 Spacer(modifier = Modifier.height(16.dp))
-                TextButton(onClick = { selectedDoctor = null }, modifier = Modifier.fillMaxWidth()) {
+                TextButton(
+                    onClick = { selectedDoctor = null },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text("Change Doctor")
                 }
             }

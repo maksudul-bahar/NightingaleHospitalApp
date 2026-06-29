@@ -24,6 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.TestResultsViewModel
 
@@ -68,23 +72,11 @@ fun PatientTestResultsScreen(
 
     val state by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Test Results — $patientName") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        (context as? ComponentActivity)?.finish()
-                    }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
+    NightingaleUserScaffold(
+        title = "Test Results — $patientName",
+        showBottomBar = false,
+        onNavigateBack = {
+            (context as? ComponentActivity)?.finish()
         }
     ) { paddingValues ->
         Box(
@@ -96,9 +88,9 @@ fun PatientTestResultsScreen(
             when (val s = state) {
                 is TestResultsViewModel.UiState.Idle,
                 is TestResultsViewModel.UiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(3) { NightingaleListShimmer() }
+                    }
                 }
                 is TestResultsViewModel.UiState.Empty -> {
                     EmptyResultsState()
@@ -126,12 +118,8 @@ fun PatientTestResultsScreen(
 
 @Composable
 private fun TestResultCard(result: com.example.nightingalehospitalapp.models.diagnostic.TestResult) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+    NightingaleElevatedCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -175,28 +163,9 @@ private fun TestResultCard(result: com.example.nightingalehospitalapp.models.dia
 
 @Composable
 private fun EmptyResultsState() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            Icons.Filled.Info,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(48.dp)
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = "No test results yet",
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 16.sp
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = "When the lab uploads results, they will appear here in real time.",
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+    NightingaleEmptyState(
+        title = "No test results yet",
+        message = "When the lab uploads results, they will appear here in real time.",
+        icon = Icons.Filled.Info
+    )
 }

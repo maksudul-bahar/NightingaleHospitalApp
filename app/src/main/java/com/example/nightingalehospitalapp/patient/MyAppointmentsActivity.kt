@@ -10,25 +10,35 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleEmptyState
+import com.example.nightingalehospitalapp.ui.components.NightingaleListShimmer
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.AppointmentViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 class MyAppointmentsActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_DOCTOR_ID = "EXTRA_DOCTOR_ID"
+    }
 
     private val appointmentViewModel: AppointmentViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val doctorId = intent.getStringExtra(EXTRA_DOCTOR_ID)
+        
         setContent {
             NightingaleHospitalAppTheme {
-                MyAppointmentsScreen(appointmentViewModel) { finish() }
+                MyAppointmentsScreen(appointmentViewModel, doctorId) { finish() }
             }
         }
     }
@@ -36,34 +46,26 @@ class MyAppointmentsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyAppointmentsScreen(viewModel: AppointmentViewModel, onBack: () -> Unit) {
+fun MyAppointmentsScreen(viewModel: AppointmentViewModel, doctorId: String?, onBack: () -> Unit) {
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
 
     LaunchedEffect(currentUser) {
-        if (currentUser != null) {
+        if (doctorId != null) {
+            viewModel.observeAppointmentsForDoctor(doctorId)
+        } else if (currentUser != null) {
             viewModel.observeAppointmentsForPatient(currentUser.uid)
         }
     }
 
     val uiState by viewModel.appointments.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Appointments") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
+    NightingaleUserScaffold(
+        title = "My Appointments",
+        showBottomBar = false,
+        onNavigateBack = onBack,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -73,24 +75,29 @@ fun MyAppointmentsScreen(viewModel: AppointmentViewModel, onBack: () -> Unit) {
         ) {
             when (val state = uiState) {
                 is AppointmentViewModel.UiState.Loading -> {
-                    CircularProgressIndicator()
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        items(4) { NightingaleListShimmer() }
+                    }
                 }
                 is AppointmentViewModel.UiState.Error -> {
                     Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
                 }
                 is AppointmentViewModel.UiState.Loaded -> {
                     if (state.appointments.isEmpty()) {
-                        Text("You have no appointments booked.")
+                        NightingaleEmptyState(
+                            title = "No Appointments",
+                            message = "You have no appointments booked.",
+                            icon = Icons.Filled.Info
+                        )
                     } else {
                         LazyColumn {
                             items(state.appointments) { appointment ->
-                                Card(
+                                NightingaleElevatedCard(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                        .padding(vertical = 8.dp)
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
                                         Text("Date: ${appointment.date} at ${appointment.time}", fontWeight = FontWeight.Bold)
                                         Text("Status: ${appointment.status.name}", color = MaterialTheme.colorScheme.primary)
                                         if (appointment.notes.isNotEmpty()) {

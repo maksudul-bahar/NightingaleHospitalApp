@@ -16,8 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.nightingalehospitalapp.database.FirebaseConfig
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +45,8 @@ fun ProfileScreen(onBackClick: () -> Unit) {
 
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
@@ -59,7 +64,9 @@ fun ProfileScreen(onBackClick: () -> Unit) {
                     }
                 }
                 .addOnFailureListener { error ->
-                    Toast.makeText(context, error.message, Toast.LENGTH_SHORT).show()
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(error.message ?: "Error loading profile")
+                    }
                 }
         }
     }
@@ -74,7 +81,8 @@ fun ProfileScreen(onBackClick: () -> Unit) {
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -84,11 +92,10 @@ fun ProfileScreen(onBackClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Card(
+            NightingaleElevatedCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    .padding(16.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -108,7 +115,8 @@ fun ProfileScreen(onBackClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Button(
+            NightingalePrimaryButton(
+                text = "Logout",
                 onClick = {
                     auth.signOut()
                     val intent = Intent(context, LoginActivity::class.java)
@@ -116,9 +124,7 @@ fun ProfileScreen(onBackClick: () -> Unit) {
                     context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth(0.8f)
-            ) {
-                Text("Logout")
-            }
+            )
         }
     }
 }

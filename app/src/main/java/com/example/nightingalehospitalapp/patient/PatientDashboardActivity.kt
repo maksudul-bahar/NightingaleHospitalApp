@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nightingalehospitalapp.activities.ProfileActivity
 import com.example.nightingalehospitalapp.database.FirebaseConfig
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.google.firebase.auth.FirebaseAuth
 
@@ -48,6 +50,8 @@ class PatientDashboardActivity : ComponentActivity() {
 fun PatientDashboardScreen() {
     val context = LocalContext.current
     var userName by remember { mutableStateOf("Patient") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
@@ -60,30 +64,30 @@ fun PatientDashboardScreen() {
                         userName = document.getString("name") ?: "Patient"
                     }
                 }
-                .addOnFailureListener {
-                    // Handle error
+                .addOnFailureListener { e ->
+                    errorMessage = "Failed to load profile: ${e.message}"
                 }
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Nightingale") },
-                actions = {
-                    IconButton(onClick = {
-                        context.startActivity(Intent(context, ProfileActivity::class.java))
-                    }) {
-                        Icon(Icons.Filled.AccountCircle, contentDescription = "Profile")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            errorMessage = null
         }
+    }
+
+    NightingaleUserScaffold(
+        title = "Nightingale",
+        currentTab = 0,
+        onTabSelected = { tabIndex ->
+            when (tabIndex) {
+                0 -> { /* Already on Home */ }
+                1 -> context.startActivity(Intent(context, MyAppointmentsActivity::class.java))
+                2 -> context.startActivity(Intent(context, ProfileActivity::class.java))
+            }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -156,19 +160,14 @@ fun DashboardCard(
     item: DashboardItem,
     onClick: () -> Unit = item.onClick
 ) {
-    Card(
+    NightingaleElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .clickable { onClick() }
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

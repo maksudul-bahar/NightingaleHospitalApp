@@ -53,6 +53,15 @@ class ManageDoctorsActivity : ComponentActivity() {
                 var showDialog by remember { mutableStateOf(false) }
                 var editingDoctor by remember { mutableStateOf<Doctor?>(null) }
                 var selectedTabIndex by remember { mutableIntStateOf(0) }
+                val snackbarHostState = remember { SnackbarHostState() }
+                val errorMessage by viewModel.errorMessage.collectAsState()
+
+                LaunchedEffect(errorMessage) {
+                    errorMessage?.let {
+                        snackbarHostState.showSnackbar(it)
+                        viewModel.clearError()
+                    }
+                }
 
                 if (showDialog) {
                     DoctorDialog(
@@ -86,6 +95,7 @@ class ManageDoctorsActivity : ComponentActivity() {
                             )
                         )
                     },
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                     containerColor = MaterialTheme.colorScheme.background
                 ) { paddingValues ->
                     Column(

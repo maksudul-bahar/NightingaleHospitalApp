@@ -21,8 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nightingalehospitalapp.models.prescription.Prescription
 import com.example.nightingalehospitalapp.repository.prescription.PrescriptionRepository
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 class WritePrescriptionActivity : ComponentActivity() {
 
@@ -64,25 +68,16 @@ fun WritePrescriptionScreen(
     var appointmentId by rememberSaveable { mutableStateOf("") }
     var date by rememberSaveable { mutableStateOf(todayString()) }
     var saving by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Prescription — $patientName") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        (context as? ComponentActivity)?.finish()
-                    }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
+    NightingaleUserScaffold(
+        title = "Prescription — $patientName",
+        showBottomBar = false,
+        onNavigateBack = {
+            (context as? ComponentActivity)?.finish()
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -98,42 +93,38 @@ fun WritePrescriptionScreen(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            OutlinedTextField(
+            NightingaleTextField(
                 value = appointmentId,
                 onValueChange = { appointmentId = it },
-                label = { Text("Appointment ID (optional)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label = "Appointment ID (optional)",
+                modifier = Modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(
+            NightingaleTextField(
                 value = diagnosis,
                 onValueChange = { diagnosis = it },
-                label = { Text("Diagnosis / Notes") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 120.dp),
-                minLines = 4
+                label = "Diagnosis / Notes",
+                modifier = Modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(
+            NightingaleTextField(
                 value = date,
                 onValueChange = { date = it },
-                label = { Text("Date (YYYY-MM-DD)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label = "Date (YYYY-MM-DD)",
+                modifier = Modifier.fillMaxWidth()
             )
 
-            Button(
+            NightingalePrimaryButton(
+                text = "Save Prescription",
                 onClick = {
-                    if (saving) return@Button
+                    if (saving) return@NightingalePrimaryButton
                     if (patientId.isBlank() || doctorId.isBlank()) {
-                        Toast.makeText(context, "Missing patient or doctor identity", Toast.LENGTH_SHORT).show()
-                        return@Button
+                        coroutineScope.launch { snackbarHostState.showSnackbar("Missing patient or doctor identity") }
+                        return@NightingalePrimaryButton
                     }
                     if (diagnosis.isBlank()) {
-                        Toast.makeText(context, "Diagnosis is required", Toast.LENGTH_SHORT).show()
-                        return@Button
+                        coroutineScope.launch { snackbarHostState.showSnackbar("Diagnosis is required") }
+                        return@NightingalePrimaryButton
                     }
                     saving = true
                     val prescription = Prescription(
@@ -149,15 +140,8 @@ fun WritePrescriptionScreen(
                     (context as? ComponentActivity)?.finish()
                 },
                 enabled = !saving,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Filled.Save, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text("Save Prescription")
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

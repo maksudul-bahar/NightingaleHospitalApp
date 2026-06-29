@@ -25,6 +25,13 @@ class ManageDoctorsViewModel(
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    fun clearError() {
+        _errorMessage.value = null
+    }
+
     init {
         var doctorsLoaded = false
         var pendingLoaded = false
@@ -36,7 +43,9 @@ class ManageDoctorsViewModel(
         }
 
         FirebaseConfig.doctorsRef.addSnapshotListener { snapshot, error ->
-            if (error == null && snapshot != null) {
+            if (error != null) {
+                _errorMessage.value = "Failed to load doctors: ${error.message}"
+            } else if (snapshot != null) {
                 _approvedDoctors.value = snapshot.toObjects(Doctor::class.java)
             }
             doctorsLoaded = true
@@ -47,7 +56,9 @@ class ManageDoctorsViewModel(
             .whereEqualTo("role", "DOCTOR")
             .whereEqualTo("approved", false)
             .addSnapshotListener { snapshot, error ->
-                if (error == null && snapshot != null) {
+                if (error != null) {
+                    _errorMessage.value = "Failed to load pending doctors: ${error.message}"
+                } else if (snapshot != null) {
                     _pendingDoctors.value = snapshot.toObjects(User::class.java)
                 }
                 pendingLoaded = true
@@ -55,7 +66,9 @@ class ManageDoctorsViewModel(
             }
 
         FirebaseConfig.departmentsRef.addSnapshotListener { snapshot, error ->
-            if (error == null && snapshot != null) {
+            if (error != null) {
+                _errorMessage.value = "Failed to load departments: ${error.message}"
+            } else if (snapshot != null) {
                 _departments.value = snapshot.toObjects(Department::class.java)
             }
         }

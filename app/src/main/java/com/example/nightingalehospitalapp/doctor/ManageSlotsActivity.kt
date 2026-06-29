@@ -19,9 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.nightingalehospitalapp.ui.components.NightingaleElevatedCard
+import com.example.nightingalehospitalapp.ui.components.NightingalePrimaryButton
+import com.example.nightingalehospitalapp.ui.components.NightingaleTextField
+import com.example.nightingalehospitalapp.ui.components.NightingaleUserScaffold
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.example.nightingalehospitalapp.viewmodel.ManageSlotsViewModel
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 class ManageSlotsActivity : ComponentActivity() {
 
@@ -49,6 +54,8 @@ fun ManageSlotsScreen(viewModel: ManageSlotsViewModel, onBack: () -> Unit) {
     var newTime by remember { mutableStateOf("") }
 
     val slots by viewModel.slots.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(selectedDate) {
         if (selectedDate.length == 10 && doctorId.isNotEmpty()) {
@@ -56,22 +63,11 @@ fun ManageSlotsScreen(viewModel: ManageSlotsViewModel, onBack: () -> Unit) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Manage Schedule") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
+    NightingaleUserScaffold(
+        title = "Manage Schedule",
+        showBottomBar = false,
+        onNavigateBack = onBack,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -82,10 +78,10 @@ fun ManageSlotsScreen(viewModel: ManageSlotsViewModel, onBack: () -> Unit) {
             Text("Select a Date", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
+            NightingaleTextField(
                 value = selectedDate,
                 onValueChange = { selectedDate = it },
-                label = { Text("Date (YYYY-MM-DD)") },
+                label = "Date (YYYY-MM-DD)",
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -100,24 +96,23 @@ fun ManageSlotsScreen(viewModel: ManageSlotsViewModel, onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
+                    NightingaleTextField(
                         value = newTime,
                         onValueChange = { newTime = it },
-                        label = { Text("Time (e.g. 09:00 AM)") },
+                        label = "Time (e.g. 09:00 AM)",
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
+                    NightingalePrimaryButton(
+                        text = "Add",
                         onClick = {
                             if (newTime.isNotBlank()) {
                                 viewModel.addSlot(doctorId, selectedDate, newTime.trim())
-                                Toast.makeText(context, "Slot added", Toast.LENGTH_SHORT).show()
+                                coroutineScope.launch { snackbarHostState.showSnackbar("Slot added") }
                                 newTime = ""
                             }
                         }
-                    ) {
-                        Text("Add")
-                    }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -131,11 +126,10 @@ fun ManageSlotsScreen(viewModel: ManageSlotsViewModel, onBack: () -> Unit) {
                 } else {
                     LazyColumn {
                         items(slots) { slot ->
-                            Card(
+                            NightingaleElevatedCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -155,7 +149,7 @@ fun ManageSlotsScreen(viewModel: ManageSlotsViewModel, onBack: () -> Unit) {
                                     if (!slot.booked) {
                                         IconButton(onClick = {
                                             viewModel.deleteSlot(slot.slotId)
-                                            Toast.makeText(context, "Slot deleted", Toast.LENGTH_SHORT).show()
+                                            coroutineScope.launch { snackbarHostState.showSnackbar("Slot deleted") }
                                         }) {
                                             Icon(
                                                 Icons.Filled.Delete,

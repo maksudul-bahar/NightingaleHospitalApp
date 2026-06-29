@@ -34,6 +34,13 @@ class ManageResourcesViewModel(
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    fun clearError() {
+        _errorMessage.value = null
+    }
+
     init {
         var bedsLoaded = false
         var theatresLoaded = false
@@ -46,23 +53,39 @@ class ManageResourcesViewModel(
             }
         }
 
-        FirebaseConfig.bedsRef.addSnapshotListener { snapshot, _ ->
-            if (snapshot != null) _beds.value = snapshot.toObjects(Bed::class.java)
+        FirebaseConfig.bedsRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                _errorMessage.value = "Failed to load beds: ${error.message}"
+            } else if (snapshot != null) {
+                _beds.value = snapshot.toObjects(Bed::class.java)
+            }
             bedsLoaded = true
             checkLoading()
         }
-        FirebaseConfig.operationTheatresRef.addSnapshotListener { snapshot, _ ->
-            if (snapshot != null) _theatres.value = snapshot.toObjects(OperationTheatre::class.java)
+        FirebaseConfig.operationTheatresRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                _errorMessage.value = "Failed to load theatres: ${error.message}"
+            } else if (snapshot != null) {
+                _theatres.value = snapshot.toObjects(OperationTheatre::class.java)
+            }
             theatresLoaded = true
             checkLoading()
         }
-        FirebaseConfig.diagnosticTestsRef.addSnapshotListener { snapshot, _ ->
-            if (snapshot != null) _tests.value = snapshot.toObjects(DiagnosticTest::class.java)
+        FirebaseConfig.diagnosticTestsRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                _errorMessage.value = "Failed to load tests: ${error.message}"
+            } else if (snapshot != null) {
+                _tests.value = snapshot.toObjects(DiagnosticTest::class.java)
+            }
             testsLoaded = true
             checkLoading()
         }
-        FirebaseConfig.departmentsRef.addSnapshotListener { snapshot, _ ->
-            if (snapshot != null) _departments.value = snapshot.toObjects(Department::class.java)
+        FirebaseConfig.departmentsRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                _errorMessage.value = "Failed to load departments: ${error.message}"
+            } else if (snapshot != null) {
+                _departments.value = snapshot.toObjects(Department::class.java)
+            }
             departmentsLoaded = true
             checkLoading()
         }
